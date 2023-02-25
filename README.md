@@ -4,7 +4,7 @@
 ```
 x2x +fa slt_arctic_a0001.f0 > output.txt
 ```
-
+Here is to convert an asscii file into float number. 
 
 The GlottDNN package contains two main parts:
 
