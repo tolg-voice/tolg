@@ -5,6 +5,13 @@
 x2x +fa slt_arctic_a0001.f0 > output.txt
 ```
 Here is to convert an Asscii file into float number. 
+This is the analysis part:
+
+```
+./Analysis ../dnn_demo/data/wav/slt_arctic_a0001.wav ../dnn_demo/config_dnn_demo.cfg
+```
+
+
 
 The GlottDNN package contains two main parts:
 
