@@ -1,5 +1,11 @@
 # GlottDNN Vocoder
 
+## Read the Analysized file
+```
+x2x +fa slt_arctic_a0001.f0 > output.txt
+```
+
+
 The GlottDNN package contains two main parts:
 
 1) The glottal vocoder written in C++
