@@ -768,6 +768,17 @@ int main(int argc, char *argv[]) {
 
             lf_data.Rd_set_err_mat_sortVal.resize(lf_data.Rd_set_err_mat_sortIdx.size());
 
+
+            //        for (size_t i = 0; i < lf_data.Rd_set_err_mat_sortIdx.size(); i++)
+            //        {
+            //            int index = lf_data.Rd_set_err_mat_sortIdx[i];
+            //            lf_data.Rd_set_err_mat_sortVal(i) = lf_data.Rd_set[index];
+            //            lf_data.Rd_n(n, i) = lf_data.Rd_set_err_mat_sortVal(i);
+            //
+            //            // Do something with the value
+            //            // For example, print it
+            //        }
+
             for (size_t i = 0; i < ncands; i++)
             {
                 int index = lf_data.Rd_set_err_mat_sortIdx[i];
@@ -784,11 +795,57 @@ int main(int argc, char *argv[]) {
                 lf_data.cost(n, i) = lf_data.exh_err_n(i);
             }
 
+            //        Find optimum Rd value (dynamic programming)
+            if (n > 1) {
+                gsl::matrix costm(ncands, ncands); // transition cost matrix: rows (previous), cols (current)
+                costm.set_all(0); // Initialize costm to all zeros
 
+                for (int c = 0; c < ncands; ++c) {
+                    // Transitions TO states in current frame
+
+                    double Ra_try = (-1 + (4.8 * lf_data.Rd_n(n, c))) / 100;
+                    double Rk_try = (22.4 + (11.8 * lf_data.Rd_n(n, c))) / 100;
+                    double EI = (M_PI * Rk_try * lf_data.EE(n)) / 2;
+                    double UP = (lf_data.Rd_n(n, c) * lf_data.EE(n)) / (10 * lf_data.F0_cur);
+                    double Rg_try = EI / (lf_data.F0_cur * UP * M_PI);
+
+                    std::cout << "Ra_try"<< Rk_try << std::endl;
+
+
+                    gsl::vector LFpulse_cur = lf_cont(lf_data.F0_cur, params.fs, Ra_try, Rk_try, Rg_try, lf_data.EE(n));
+
+//                    for (int p = 0; p < ncands; ++p) {
+//                        // Transitions FROM states in previous frame
+//                        gsl::vector Ra_prev, Rk_prev, Rg_prev;
+//                        Rd2R(lf_data.Rd_n(n - 1, p), lf_data.EE(n), lf_data.F0_cur, Ra_prev, Rk_prev, Rg_prev);
+//                        gsl::vector LFpulse_prev = lf_cont(lf_data.F0_cur, params.fs, Ra_prev, Rk_prev, Rg_prev, lf_data.EE(n));
+//
+//                        if (std::isnan(LFpulse_cur(0)) || std::isnan(LFpulse_prev(0))) {
+//                            costm(p, c) = 0;
+//                        } else {
+//                            gsl::matrix cor_cur = computeCorrelation(LFpulse_cur, LFpulse_prev);
+//                            double cor_val = cor_cur(0, 1);
+//                            costm(p, c) = (1 - std::abs(cor_val)) * trans_wgt; // transition cost
+//                        }
+//                    }
+                }
+
+//                // Add cumulative costs to costm
+//                gsl::vector prev_costs = lf_data.cost.row(n - 1).subvector(0, ncands);
+//                costm.add_row(prev_costs);
+//
+//                // Find minimum costs and corresponding indices
+//                gsl::vector costi, previ;
+//                gsl::matrix_min_rows(costm, costi, previ);
+//
+//                // Update cost and prev matrices
+//                lf_data.cost.set_row(n, cost.row(n) + costi);
+//                lf_data.prev.set_row(n, previ);
+
+            }
 
 
 //            std::cout << "lf_data.exh_err_n"<< lf_data.LFgroup_win_spec.size() << std::endl;
-            std::cout << "lf_data.exh_err_n"<< lf_data.err_mat_sort.size() << std::endl;
 
 
 
