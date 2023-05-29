@@ -68,8 +68,9 @@ Param::Param() {
 	extract_lsf_glot = true;
 	extract_hnr = true;
 	extract_infofile = false;
-	extract_glottal_excitation = false;
-	extract_gci_signal = false;
+	extract_glottal_excitation = true;
+    extract_dev_glottal_excitation = true;
+	extract_gci_signal = true;
 	extract_original_signal = false;
 	extract_pulses_as_features = false;
 	use_paf_energy_normalization = true;
@@ -141,6 +142,7 @@ int AnalysisData::AllocateData(const Param &params) {
 	fundf = gsl::vector(params.number_of_frames,true);
 	frame_energy = gsl::vector(params.number_of_frames,true);
 	source_signal = gsl::vector(params.signal_length, true);
+    source_dev_signal = gsl::vector(params.signal_length, true);
 
 	poly_vocal_tract = gsl::matrix(params.lpc_order_vt+1,params.number_of_frames,true);
 	lsf_vocal_tract = gsl::matrix(params.lpc_order_vt,params.number_of_frames,true);
@@ -196,13 +198,43 @@ int AnalysisData::SaveData(const Param &params) {
       if(WriteWavFile(filename, source_signal, params.fs) == EXIT_FAILURE)
          return EXIT_FAILURE;
    }
+
+    // Calculate derivative of source_signal
+    gsl::vector source_dev_signal(source_signal.size() - 1);
+    for (size_t i = 0; i < source_signal.size() - 1; i++) {
+        double derivative = source_signal[i+1] - source_signal[i];
+        source_dev_signal[i] = derivative;
+    }
+
+
+//    if (params.extract_dev_glottal_excitation) {
+//        filename = GetParamPath("exc", params.extension_dev_src, params.dir_exc, params);
+//        if(WriteWavFile(filename, source_signal, params.fs) == EXIT_FAILURE)
+//            return EXIT_FAILURE;
+//    }
+// Save source_dev_signal to file
+    if (params.extract_dev_glottal_excitation) {
+        // Write derivative of source signal to file with extension ".dev_src"
+        filename = GetParamPath("exc", params.extension_dev_src, params.dir_exc, params);
+        if(WriteWavFile(filename, source_dev_signal, params.fs) == EXIT_FAILURE)
+            return EXIT_FAILURE;
+    }
+
+
    if (params.extract_original_signal) {
       filename = GetParamPath("exc", params.extension_wav, params.dir_exc, params);
       if(WriteWavFile(filename, signal, params.fs) == EXIT_FAILURE)
          return EXIT_FAILURE;
    }
 
-   return EXIT_SUCCESS;
+    if (params.extract_gci_signal) {
+        filename = GetParamPath("gci", params.extension_gci, params.dir_gci, params);
+        WriteGslVector(filename, params.data_type, gci_inds);
+    }
+
+
+
+    return EXIT_SUCCESS;
 }
 
 SynthesisData::SynthesisData() {}

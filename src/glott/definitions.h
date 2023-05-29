@@ -87,7 +87,8 @@ struct Param
 	bool extract_hnr;
 	bool extract_infofile;
 	bool extract_glottal_excitation;
-	bool extract_original_signal;
+    bool extract_dev_glottal_excitation;
+    bool extract_original_signal;
 	bool extract_gci_signal;
 	bool extract_pulses_as_features;
 	bool use_paf_energy_normalization;
@@ -134,8 +135,10 @@ struct Param
 	std::string dir_exc;
 	std::string dir_syn;
 	std::string dir_sp;
+    std::string dir_gci;
 
-	/* extensions for parameter types */
+
+    /* extensions for parameter types */
 	std::string extension_gain;
 	std::string extension_lsf;
 	std::string extension_lsfg;
@@ -146,8 +149,9 @@ struct Param
 	std::string extension_src = ".src.wav";
 	std::string extension_syn;
 	std::string extension_wav;
-
-	std::string wav_filename;
+    std::string extension_gci = ".gci";
+    std::string extension_dev_src = ".dev_src.wav";
+    std::string wav_filename;
 	std::string default_config_filename;
 	std::string user_config_filename;
 };
@@ -164,7 +168,9 @@ public:
 	gsl::vector frame_energy;
 	gsl::vector_int gci_inds;
 	gsl::vector source_signal;
-   gsl::vector source_signal_iaif;
+    gsl::vector source_dev_signal;
+
+    gsl::vector source_signal_iaif;
 
 	gsl::matrix poly_vocal_tract;
 	gsl::matrix lsf_vocal_tract;
@@ -207,6 +213,52 @@ public:
 };
 
 
+/* Define analysis data variable struct*/
+struct LfData {
+public:
+    gsl::vector Rd;
+    gsl::vector EE;
+    gsl::vector Ra;
+    gsl::vector Rk;
+    gsl::vector Rg;
+    double Ra_cur;
+    double Rk_cur;
+    double Rg_cur;
+    double F0_cur;
+    double pulseLen;
+    double cor_time;
+    double err_time;
+    double cor_freq;
+    double err_freq;
+
+    gsl::vector Rd_set;
+    gsl::matrix Rd_n;
+    gsl::matrix cost;
+    gsl::matrix prev;
+    gsl::vector glot_seg;
+    gsl::vector glot_seg_spec;
+    gsl::vector glot_seg_fft_mag;
+    gsl::vector glot_seg_log_mag;
+    gsl::vector freq;
+    gsl::vector err_mat;
+    gsl::vector err_mat_sort;
+    gsl::vector err_mat_time;
+    gsl::vector err_mat_sortIdx;
+    gsl::vector Rd_set_err_mat_sortIdx;
+    gsl::vector Rd_set_err_mat_sortVal;
+
+    gsl::vector pulse;
+    gsl::vector g_LF;
+
+    gsl::vector LFgroup;
+    gsl::vector LFgroup_win_spec;
+    gsl::vector LFgroup_win;
+
+
+    gsl::vector exh_err_n;
+
+
+};
 
 
 
