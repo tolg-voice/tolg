@@ -225,7 +225,8 @@ gsl::vector lf_cont(double F0, double fs, double Ra, double Rk, double Rg, doubl
     double Tc = Tb + Te;
 
     if (F0 < F0min || F0 > F0max) {
-        return gsl::vector(); // Return empty vector for invalid F0
+        return 0; // Return empty vector for invalid F0
+        // THIS IS THE ERROR SIDE!
     } else {
         // Solve area balance using Newton-Raphson method
         double alpha, epsi;
@@ -809,10 +810,71 @@ int main(int argc, char *argv[]) {
                     double UP = (lf_data.Rd_n(n, c) * lf_data.EE(n)) / (10 * lf_data.F0_cur);
                     double Rg_try = EI / (lf_data.F0_cur * UP * M_PI);
 
-                    std::cout << "Ra_try"<< Rk_try << std::endl;
 
-
+                    //            LFpulse_cur = lf_cont(F0_cur,fs,Ra_try,Rk_try,Rg_try,EE(n));
                     gsl::vector LFpulse_cur = lf_cont(lf_data.F0_cur, params.fs, Ra_try, Rk_try, Rg_try, lf_data.EE(n));
+
+
+                    std::cout << "LFpulse_cur"<< LFpulse_cur << std::endl;
+
+//                    gsl::vector lf_cont(double F0, double fs, double Ra, double Rk, double Rg, double EE) {
+//                        const double F0min = 20.0;
+//                        const double F0max = 500.0;
+//
+//                        // Set LF model parameters
+//                        double T0 = 1.0 / F0;
+//                        double Ta = Ra * T0;
+//                        double Te = ((1.0 + Rk) / (2.0 * Rg)) * T0;
+//                        double Tp = Te / (Rk + 1.0);
+//                        double Tb = ((1.0 - (Rk + 1.0) / (2.0 * Rg)) * 1.0 / F0);
+//                        double Tc = Tb + Te;
+//
+//                        if (F0 < F0min || F0 > F0max) {
+//                            return gsl::vector(); // Return empty vector for invalid F0
+//                        } else {
+//                            // Solve area balance using Newton-Raphson method
+//                            double alpha, epsi;
+//
+//                            lfSource(alpha, epsi, Tc, fs, Tp, Te, Ta, EE);
+//
+//                            double omega = M_PI / Tp;
+//                            double E0 = -(std::abs(EE)) / (std::exp(alpha * Te) * std::sin(omega * Te));
+//
+//                            // Generate open phase and closed phase and combine
+//                            double dt = 1.0 / fs;
+//
+//                            size_t T1_size = static_cast<size_t>(std::round(Te / dt));
+//                            size_t T2_size = static_cast<size_t>(std::round((Tc - Te) / dt));
+//
+//                            // Ensure T1_size and T2_size are positive
+//                            T1_size = std::max(T1_size, static_cast<size_t>(1));
+//                            T2_size = std::max(T2_size, static_cast<size_t>(1));
+//
+//                            gsl::vector T1(T1_size);
+//                            gsl::vector T2(T2_size);
+//
+//                            for (size_t i = 0; i < T1_size; i++) {
+//                                double t = dt * i;
+//                                T1[i] = E0 * std::exp(alpha * t) * std::sin(omega * t);
+//                            }
+//
+//                            for (size_t i = 0; i < T2_size; i++) {
+//                                double t = (T1_size * dt) + dt * i;
+//                                T2[i] = (-EE / (epsi * Ta)) * (std::exp(-epsi * (t - Te)) - std::exp(-epsi * Tb));
+//                            }
+//
+//                            gsl::vector g_LF(T1_size + T2_size);
+//                            for (size_t i = 0; i < T1_size; i++) {
+//                                g_LF[i] = T1[i];
+//                            }
+//                            for (size_t i = 0; i < T2_size; i++) {
+//                                g_LF[T1_size + i] = T2[i];
+//                            }
+//
+//                            return g_LF;
+//                        }
+//                    }
+
 
 //                    for (int p = 0; p < ncands; ++p) {
 //                        // Transitions FROM states in previous frame
