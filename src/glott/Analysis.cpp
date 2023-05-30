@@ -856,7 +856,6 @@ int main(int argc, char *argv[]) {
 
                         lf_cont(lf_data.F0_cur, params.fs, lf_data.Ra_prev, lf_data.Rk_prev, lf_data.Rg_cur, lf_data.EE(n), lf_data.LFpulse_prev);
 
-//                        std::cout << "lf_data.LFpulse_cur(0)"<< lf_data.LFpulse_prev << std::endl;
 
 
 
@@ -869,23 +868,49 @@ int main(int argc, char *argv[]) {
                             double cor_val = cor_cur(0, 1);
                             costm(p, c) = (1 - std::abs(cor_val)) * trans_wgt; // transition cost
 
-                            std::cout << "cor_val"<<cor_val << std::endl;
+                            std::cout << "cor_val"<<costm << std::endl;
 
                         }
 
+//                        costm=costm+repmat(cost(n-1,1:ncands)',1,ncands);  % add in cumulative costs
+//                        [costi,previ]=min(costm,[],1);
+//                        cost(n,1:ncands)=cost(n,1:ncands)+costi;
+//                        prev(n,1:ncands)=previ;
+
+
+
+                        std::vector<double> costi(ncands);
+                        std::vector<int> previ(ncands);
+
+                        for (int j = 0; j < ncands; j++) {
+                            for (int i = 0; i < costm.get_rows(); i++) {
+                                costi[i] = costm(i, j);
+                            }
+                            // Find the index of the minimum value in costi
+                            double minVal = costi[0];
+                            size_t idx = 0;
+                            for (size_t i = 1; i < costi.size(); ++i) {
+                                if (costi[i] < minVal) {
+                                    minVal = costi[i];
+                                    idx = i;
+                                }
+                            }
+                            previ[j] = idx;
+                            lf_data.cost(n, j) += costi[previ[j]];
+                        }
+
+// Update prev matrix
+                        for (int j = 0; j < ncands; j++) {
+                            lf_data.prev(n, j) = previ[j];
+                        }
+
+
+                        std::cout << "lf_data.lf_data.prev"<< lf_data.prev << std::endl;
 
 
 
 
-//                        gsl::vector LFpulse_prev = lf_cont(F0_cur, fs, Ra_prev, Rk_prev, Rg_prev, lf_data.EE(n));
 
-//                        if (std::isnan(LFpulse_cur(0)) || std::isnan(LFpulse_prev(0))) {
-//                            costm(p, c) = 0;
-//                        } else {
-//                            gsl::matrix cor_cur = corrcoef(LFpulse_cur, LFpulse_prev);
-//                            double cor_val = cor_cur(0, 1);
-//                            costm(p, c) = (1 - std::abs(cor_val)) * trans_wgt; // transition cost
-//                        }
                     }
 
 
@@ -923,7 +948,6 @@ int main(int argc, char *argv[]) {
             }
 
 
-//            std::cout << "lf_data.exh_err_n"<< lf_data.LFgroup_win_spec.size() << std::endl;
 
 
 
