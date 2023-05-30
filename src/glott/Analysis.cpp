@@ -480,6 +480,53 @@ size_t nextPowerOf2(size_t n) {
     return power;
 }
 
+
+
+
+std::vector<double> medfilt1(const std::vector<double>& input, int windowSize) {
+    std::vector<double> output(input.size());
+    int halfWindowSize = windowSize / 2;
+
+    for (int i = 0; i < input.size(); i++) {
+        std::vector<double> window;
+
+        for (int j = std::max(0, i - halfWindowSize); j <= std::min(i + halfWindowSize, static_cast<int>(input.size()) - 1); j++) {
+            window.push_back(input[j]);
+        }
+
+        std::sort(window.begin(), window.end());
+
+        if (window.size() % 2 == 0) {
+            output[i] = (window[window.size() / 2 - 1] + window[window.size() / 2]) / 2.0;
+        } else {
+            output[i] = window[window.size() / 2];
+        }
+    }
+
+    return output;
+}
+
+std::vector<double> smooth(const std::vector<double>& input, int windowSize) {
+    std::vector<double> output(input.size());
+    int halfWindowSize = windowSize / 2;
+
+    for (int i = 0; i < input.size(); i++) {
+        double sum = 0.0;
+        int count = 0;
+
+        for (int j = std::max(0, i - halfWindowSize); j <= std::min(i + halfWindowSize, static_cast<int>(input.size()) - 1); j++) {
+            sum += input[j];
+            count++;
+        }
+
+        output[i] = sum / static_cast<double>(count);
+    }
+
+    return output;
+}
+
+
+
 int main(int argc, char *argv[]) {
 
    if (CheckCommandLineAnalysis(argc) == EXIT_FAILURE) {
@@ -868,7 +915,7 @@ int main(int argc, char *argv[]) {
                             double cor_val = cor_cur(0, 1);
                             costm(p, c) = (1 - std::abs(cor_val)) * trans_wgt; // transition cost
 
-                            std::cout << "cor_val"<<costm << std::endl;
+//                            std::cout << "cor_val"<<costm << std::endl;
 
                         }
 
@@ -905,7 +952,7 @@ int main(int argc, char *argv[]) {
                         }
 
 
-                        std::cout << "lf_data.lf_data.prev"<< lf_data.prev << std::endl;
+//                        std::cout << "lf_data.lf_data.prev"<< lf_data.prev << std::endl;
 
 
 
@@ -915,6 +962,44 @@ int main(int argc, char *argv[]) {
 
 
 
+                    // Do traceback
+                    lf_data.best.resize(n);
+                    // Find the index of the minimum value in the subset of cost matrix
+                    double minVal = lf_data.cost(n, 0);
+                    size_t idx = 0;
+
+
+                    for (size_t i = 1; i < ncands; ++i) {
+                        if (lf_data.cost(n, i) < minVal) {
+                            minVal = lf_data.cost(n, i);
+                            idx = i;
+
+                        }
+                    }
+
+                    lf_data.best(n) = idx;
+
+
+
+                    std::cout << "idx"<<idx << std::endl;
+
+//                    best(n - 1) = gsl_vector_min_index(gsl_vector_subvector(gsl_matrix_row(&lf_data.cost, n - 1), 0, ncands - 1));
+//
+//                    for (int i = n; i >= 2; i--) {
+//                        best(i - 2) = lf_data.prev(i, best(i - 1));
+//                    }
+
+//                    gsl::vector Rd_opt(nframe);
+//                    for (int n = 0; n < nframe; n++) {
+//                        Rd_opt(n) = Rd_n(n, best(n));
+//                    }
+//
+//                    // Apply median filtering, smoothing, and scaling
+//                    std::vector<double> Rd_opt_filtered = medfilt1(Rd_opt, 11);
+//                    std::vector<double> Rd_opt_smoothed = smooth(Rd_opt_filtered, 5);
+//                    std::transform(Rd_opt_smoothed.begin(), Rd_opt_smoothed.end(), Rd_opt.begin(), Rd_opt.begin(), std::multiplies<double>());
+
+//                    params.Rd = Rd_opt;
 
 
 //                    for (int p = 0; p < ncands; ++p) {
@@ -955,7 +1040,6 @@ int main(int argc, char *argv[]) {
 //        {
 //            int index = lf_data.err_mat_sortIdx[c];
 //
-//            std::cout << "sss"<<data.gci_inds.size() << std::endl;
 //
 //        }
 

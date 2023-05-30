@@ -253,6 +253,7 @@ public:
     gsl::vector LFgroup;
     gsl::vector LFgroup_win_spec;
     gsl::vector LFgroup_win;
+    gsl::vector best;
 
 
     gsl::vector exh_err_n;
