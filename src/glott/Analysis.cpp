@@ -211,8 +211,67 @@ void Rd2R(double Rd, double EE, double F0, double& Ra, double& Rk, double& Rg) {
 //    }
 //}
 
+//
+//gsl::vector lf_cont(double F0, double fs, double Ra, double Rk, double Rg, double EE) {
+//    const double F0min = 20.0;
+//    const double F0max = 500.0;
+//
+//    // Set LF model parameters
+//    double T0 = 1.0 / F0;
+//    double Ta = Ra * T0;
+//    double Te = ((1.0 + Rk) / (2.0 * Rg)) * T0;
+//    double Tp = Te / (Rk + 1.0);
+//    double Tb = ((1.0 - (Rk + 1.0) / (2.0 * Rg)) * 1.0 / F0);
+//    double Tc = Tb + Te;
+//
+//    if (F0 < F0min || F0 > F0max) {
+//        return 0; // Return empty vector for invalid F0
+//        // THIS IS THE ERROR SIDE!
+//    } else {
+//        // Solve area balance using Newton-Raphson method
+//        double alpha, epsi;
+//
+//        lfSource(alpha, epsi, Tc, fs, Tp, Te, Ta, EE);
+//
+//        double omega = M_PI / Tp;
+//        double E0 = -(std::abs(EE)) / (std::exp(alpha * Te) * std::sin(omega * Te));
+//
+//        // Generate open phase and closed phase and combine
+//        double dt = 1.0 / fs;
+//
+//        size_t T1_size = static_cast<size_t>(std::round(Te / dt));
+//        size_t T2_size = static_cast<size_t>(std::round((Tc - Te) / dt));
+//
+//        // Ensure T1_size and T2_size are positive
+//        T1_size = std::max(T1_size, static_cast<size_t>(1));
+//        T2_size = std::max(T2_size, static_cast<size_t>(1));
+//
+//        gsl::vector T1(T1_size);
+//        gsl::vector T2(T2_size);
+//
+//        for (size_t i = 0; i < T1_size; i++) {
+//            double t = dt * i;
+//            T1[i] = E0 * std::exp(alpha * t) * std::sin(omega * t);
+//        }
+//
+//        for (size_t i = 0; i < T2_size; i++) {
+//            double t = (T1_size * dt) + dt * i;
+//            T2[i] = (-EE / (epsi * Ta)) * (std::exp(-epsi * (t - Te)) - std::exp(-epsi * Tb));
+//        }
+//
+//        gsl::vector g_LF(T1_size + T2_size);
+//        for (size_t i = 0; i < T1_size; i++) {
+//            g_LF[i] = T1[i];
+//        }
+//        for (size_t i = 0; i < T2_size; i++) {
+//            g_LF[T1_size + i] = T2[i];
+//        }
+//
+//        return g_LF;
+//    }
+//}
 
-gsl::vector lf_cont(double F0, double fs, double Ra, double Rk, double Rg, double EE) {
+void lf_cont(double F0, double fs, double Ra, double Rk, double Rg, double EE, gsl::vector& g_LF) {
     const double F0min = 20.0;
     const double F0max = 500.0;
 
@@ -225,8 +284,9 @@ gsl::vector lf_cont(double F0, double fs, double Ra, double Rk, double Rg, doubl
     double Tc = Tb + Te;
 
     if (F0 < F0min || F0 > F0max) {
-        return 0; // Return empty vector for invalid F0
-        // THIS IS THE ERROR SIDE!
+        // Handle invalid F0 value
+        // For example, you can clear the input vector:
+        g_LF.resize(0);
     } else {
         // Solve area balance using Newton-Raphson method
         double alpha, epsi;
@@ -246,30 +306,21 @@ gsl::vector lf_cont(double F0, double fs, double Ra, double Rk, double Rg, doubl
         T1_size = std::max(T1_size, static_cast<size_t>(1));
         T2_size = std::max(T2_size, static_cast<size_t>(1));
 
-        gsl::vector T1(T1_size);
-        gsl::vector T2(T2_size);
+        g_LF.resize(T1_size + T2_size);
 
         for (size_t i = 0; i < T1_size; i++) {
             double t = dt * i;
-            T1[i] = E0 * std::exp(alpha * t) * std::sin(omega * t);
+            g_LF[i] = E0 * std::exp(alpha * t) * std::sin(omega * t);
         }
 
         for (size_t i = 0; i < T2_size; i++) {
             double t = (T1_size * dt) + dt * i;
-            T2[i] = (-EE / (epsi * Ta)) * (std::exp(-epsi * (t - Te)) - std::exp(-epsi * Tb));
+            g_LF[T1_size + i] = (-EE / (epsi * Ta)) * (std::exp(-epsi * (t - Te)) - std::exp(-epsi * Tb));
         }
-
-        gsl::vector g_LF(T1_size + T2_size);
-        for (size_t i = 0; i < T1_size; i++) {
-            g_LF[i] = T1[i];
-        }
-        for (size_t i = 0; i < T2_size; i++) {
-            g_LF[T1_size + i] = T2[i];
-        }
-
-        return g_LF;
     }
 }
+
+
 
 
 //std::cout << "alpha " << alpha  << std::endl;
@@ -346,6 +397,8 @@ gsl::vector makePulseCentGCI(const gsl::vector pulse, int winLen, int start, int
 //
 //
 
+
+// todo ??? Is ths Correspond?
 
 double computeCorrelation(const gsl::vector& X, const gsl::vector& Y)
 {
@@ -798,8 +851,8 @@ int main(int argc, char *argv[]) {
 
             //        Find optimum Rd value (dynamic programming)
             if (n > 1) {
-                gsl::matrix costm(ncands, ncands); // transition cost matrix: rows (previous), cols (current)
-                costm.set_all(0); // Initialize costm to all zeros
+//                lf_data.costm(ncands, ncands); // transition cost matrix: rows (previous), cols (current)
+//                lf_data.costm.set_all(0); // Initialize costm to all zeros
 
                 for (int c = 0; c < ncands; ++c) {
                     // Transitions TO states in current frame
@@ -812,68 +865,55 @@ int main(int argc, char *argv[]) {
 
 
                     //            LFpulse_cur = lf_cont(F0_cur,fs,Ra_try,Rk_try,Rg_try,EE(n));
-                    gsl::vector LFpulse_cur = lf_cont(lf_data.F0_cur, params.fs, Ra_try, Rk_try, Rg_try, lf_data.EE(n));
+//                    void lf_cont(double F0, double fs, double Ra, double Rk, double Rg, double EE, gsl::vector& g_LF) {
+
+                    lf_cont(lf_data.F0_cur, params.fs, Ra_try, Rk_try, Rg_try, lf_data.EE(n), lf_data.LFpulse_cur);
 
 
-                    std::cout << "LFpulse_cur"<< LFpulse_cur << std::endl;
+                    for (int p = 0; p < ncands; ++p) {
 
-//                    gsl::vector lf_cont(double F0, double fs, double Ra, double Rk, double Rg, double EE) {
-//                        const double F0min = 20.0;
-//                        const double F0max = 500.0;
-//
-//                        // Set LF model parameters
-//                        double T0 = 1.0 / F0;
-//                        double Ta = Ra * T0;
-//                        double Te = ((1.0 + Rk) / (2.0 * Rg)) * T0;
-//                        double Tp = Te / (Rk + 1.0);
-//                        double Tb = ((1.0 - (Rk + 1.0) / (2.0 * Rg)) * 1.0 / F0);
-//                        double Tc = Tb + Te;
-//
-//                        if (F0 < F0min || F0 > F0max) {
-//                            return gsl::vector(); // Return empty vector for invalid F0
+
+
+                        // Transitions FROM states in previous frame
+//                        [Ra_prev,Rk_prev,Rg_prev] = Rd2R(Rd_n(n-1,p),EE(n),F0_cur);
+
+                        Rd2R(lf_data.Rd_n(n-1,p), lf_data.EE(n), lf_data.F0_cur, lf_data.Ra_prev, lf_data.Rk_prev, lf_data.Rg_prev);
+
+                        // LFpulse_prev = lf_cont(F0_cur,fs,Ra_prev,Rk_prev,Rg_prev,EE(n));
+
+                        lf_cont(lf_data.F0_cur, params.fs, lf_data.Ra_prev, lf_data.Rk_prev, lf_data.Rg_cur, lf_data.EE(n), lf_data.LFpulse_prev);
+
+
+
+
+
+
+//                        if (std::isnan( lf_data.LFpulse_cur(0)) || std::isnan( lf_data.LFpulse_prev(0))) {
+////                            costm(p, c) = 0;
 //                        } else {
-//                            // Solve area balance using Newton-Raphson method
-//                            double alpha, epsi;
-//
-//                            lfSource(alpha, epsi, Tc, fs, Tp, Te, Ta, EE);
-//
-//                            double omega = M_PI / Tp;
-//                            double E0 = -(std::abs(EE)) / (std::exp(alpha * Te) * std::sin(omega * Te));
-//
-//                            // Generate open phase and closed phase and combine
-//                            double dt = 1.0 / fs;
-//
-//                            size_t T1_size = static_cast<size_t>(std::round(Te / dt));
-//                            size_t T2_size = static_cast<size_t>(std::round((Tc - Te) / dt));
-//
-//                            // Ensure T1_size and T2_size are positive
-//                            T1_size = std::max(T1_size, static_cast<size_t>(1));
-//                            T2_size = std::max(T2_size, static_cast<size_t>(1));
-//
-//                            gsl::vector T1(T1_size);
-//                            gsl::vector T2(T2_size);
-//
-//                            for (size_t i = 0; i < T1_size; i++) {
-//                                double t = dt * i;
-//                                T1[i] = E0 * std::exp(alpha * t) * std::sin(omega * t);
-//                            }
-//
-//                            for (size_t i = 0; i < T2_size; i++) {
-//                                double t = (T1_size * dt) + dt * i;
-//                                T2[i] = (-EE / (epsi * Ta)) * (std::exp(-epsi * (t - Te)) - std::exp(-epsi * Tb));
-//                            }
-//
-//                            gsl::vector g_LF(T1_size + T2_size);
-//                            for (size_t i = 0; i < T1_size; i++) {
-//                                g_LF[i] = T1[i];
-//                            }
-//                            for (size_t i = 0; i < T2_size; i++) {
-//                                g_LF[T1_size + i] = T2[i];
-//                            }
-//
-//                            return g_LF;
+////                            gsl::matrix cor_cur = computeCorrelation( lf_data.LFpulse_cur,  lf_data.LFpulse_prev);
+////                            double cor_val = cor_cur(0, 1);
+////                            costm(p, c) = (1 - std::abs(cor_val)) * trans_wgt; // transition cost
 //                        }
-//                    }
+
+
+
+
+
+                        std::cout << "lf_data.Rd_n"<< lf_data.LFpulse_prev(0) << std::endl;
+
+//                        gsl::vector LFpulse_prev = lf_cont(F0_cur, fs, Ra_prev, Rk_prev, Rg_prev, lf_data.EE(n));
+
+//                        if (std::isnan(LFpulse_cur(0)) || std::isnan(LFpulse_prev(0))) {
+//                            costm(p, c) = 0;
+//                        } else {
+//                            gsl::matrix cor_cur = corrcoef(LFpulse_cur, LFpulse_prev);
+//                            double cor_val = cor_cur(0, 1);
+//                            costm(p, c) = (1 - std::abs(cor_val)) * trans_wgt; // transition cost
+//                        }
+                    }
+
+
 
 
 //                    for (int p = 0; p < ncands; ++p) {

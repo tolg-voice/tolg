@@ -256,7 +256,11 @@ public:
 
 
     gsl::vector exh_err_n;
+    gsl::vector LFpulse_cur;
 
+    gsl::vector LFpulse_prev;
+    gsl::matrix costm;
+    double Ra_prev, Rk_prev, Rg_prev;
 
 };
 
