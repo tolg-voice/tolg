@@ -260,8 +260,8 @@ public:
 
     gsl::vector LFpulse_prev;
     gsl::matrix costm;
+    double Ra_try, Rk_try, Rg_try;
     double Ra_prev, Rk_prev, Rg_prev;
-
 };
 
 

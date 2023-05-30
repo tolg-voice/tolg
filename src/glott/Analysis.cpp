@@ -270,7 +270,7 @@ void Rd2R(double Rd, double EE, double F0, double& Ra, double& Rk, double& Rg) {
 //        return g_LF;
 //    }
 //}
-
+//
 void lf_cont(double F0, double fs, double Ra, double Rk, double Rg, double EE, gsl::vector& g_LF) {
     const double F0min = 20.0;
     const double F0max = 500.0;
@@ -283,42 +283,44 @@ void lf_cont(double F0, double fs, double Ra, double Rk, double Rg, double EE, g
     double Tb = ((1.0 - (Rk + 1.0) / (2.0 * Rg)) * 1.0 / F0);
     double Tc = Tb + Te;
 
-    if (F0 < F0min || F0 > F0max) {
-        // Handle invalid F0 value
-        // For example, you can clear the input vector:
-        g_LF.resize(0);
-    } else {
+//    if (F0 < F0min || F0 > F0max) {
+//        // Handle invalid F0 value
+//        // For example, you can clear the input vector:
+//        g_LF.resize(0);
+//    } else {
         // Solve area balance using Newton-Raphson method
-        double alpha, epsi;
+    double alpha, epsi;
 
-        lfSource(alpha, epsi, Tc, fs, Tp, Te, Ta, EE);
+    lfSource(alpha, epsi, Tc, fs, Tp, Te, Ta, EE);
 
-        double omega = M_PI / Tp;
-        double E0 = -(std::abs(EE)) / (std::exp(alpha * Te) * std::sin(omega * Te));
+    double omega = M_PI / Tp;
+    double E0 = -(std::abs(EE)) / (std::exp(alpha * Te) * std::sin(omega * Te));
 
-        // Generate open phase and closed phase and combine
-        double dt = 1.0 / fs;
+    // Generate open phase and closed phase and combine
+    double dt = 1.0 / fs;
 
-        size_t T1_size = static_cast<size_t>(std::round(Te / dt));
-        size_t T2_size = static_cast<size_t>(std::round((Tc - Te) / dt));
+    size_t T1_size = static_cast<size_t>(std::round(Te / dt));
+    size_t T2_size = static_cast<size_t>(std::round((Tc - Te) / dt));
 
-        // Ensure T1_size and T2_size are positive
-        T1_size = std::max(T1_size, static_cast<size_t>(1));
-        T2_size = std::max(T2_size, static_cast<size_t>(1));
+    // Ensure T1_size and T2_size are positive
+    T1_size = std::max(T1_size, static_cast<size_t>(1));
+    T2_size = std::max(T2_size, static_cast<size_t>(1));
 
-        g_LF.resize(T1_size + T2_size);
+    g_LF.resize(T1_size + T2_size);
 
-        for (size_t i = 0; i < T1_size; i++) {
-            double t = dt * i;
-            g_LF[i] = E0 * std::exp(alpha * t) * std::sin(omega * t);
-        }
-
-        for (size_t i = 0; i < T2_size; i++) {
-            double t = (T1_size * dt) + dt * i;
-            g_LF[T1_size + i] = (-EE / (epsi * Ta)) * (std::exp(-epsi * (t - Te)) - std::exp(-epsi * Tb));
-        }
+    for (size_t i = 0; i < T1_size; i++) {
+        double t = dt * i;
+        g_LF[i] = E0 * std::exp(alpha * t) * std::sin(omega * t);
     }
+
+    for (size_t i = 0; i < T2_size; i++) {
+        double t = (T1_size * dt) + dt * i;
+        g_LF[T1_size + i] = (-EE / (epsi * Ta)) * (std::exp(-epsi * (t - Te)) - std::exp(-epsi * Tb));
+    }
+//    }
 }
+
+
 
 
 
@@ -428,6 +430,45 @@ double computeCorrelation(const gsl::vector& X, const gsl::vector& Y)
                          * (n * squareSum_Y - sum_Y * sum_Y));
 
     return corr;
+}
+
+
+
+gsl::matrix computeCorrelationMatrix(const gsl::vector& X, const gsl::vector& Y)
+{
+    int n = X.size();
+    gsl::matrix corrMatrix(1, n); // Create a matrix to store correlation scores
+
+    double sum_X = 0.0, sum_Y = 0.0, sum_XY = 0.0;
+    double squareSum_X = 0.0, squareSum_Y = 0.0;
+
+    for (int i = 0; i < n; i++)
+    {
+        // Sum of elements of vector X.
+        sum_X += X[i];
+
+        // Sum of elements of vector Y.
+        sum_Y += Y[i];
+
+        // Sum of X[i] * Y[i].
+        sum_XY += X[i] * Y[i];
+
+        // Sum of squares of vector elements.
+        squareSum_X += X[i] * X[i];
+        squareSum_Y += Y[i] * Y[i];
+    }
+
+    // Compute the correlation coefficient for each element
+    for (int i = 0; i < n; i++)
+    {
+        double corr = (n * X[i] * Y[i] - sum_X * sum_Y)
+                      / sqrt((n * X[i] * X[i] - sum_X * sum_X)
+                             * (n * Y[i] * Y[i] - sum_Y * sum_Y));
+
+        corrMatrix(0, i) = corr;
+    }
+
+    return corrMatrix;
 }
 
 
@@ -577,7 +618,6 @@ int main(int argc, char *argv[]) {
     // for n=1:length(GCI)
     for (int n = 0; n < data.gci_inds.size(); ++n) {
         double pulseLen;
-        std::cout << "n " << n  << std::endl;
 
         if (n == 0)
         {
@@ -676,114 +716,59 @@ int main(int argc, char *argv[]) {
         // for m=1:length(Rd_set)
         for (int m = 0; m < lf_data.Rd_set.size(); ++m) {
 
+
             Rd2R(lf_data.Rd_set(m), lf_data.EE(n), lf_data.F0_cur, lf_data.Ra_cur, lf_data.Rk_cur, lf_data.Rg_cur);
 
 
 
-//            lf_data.pulse = lf_cont(lf_data.F0_cur, params.fs, lf_data.Ra_cur, lf_data.Rk_cur, lf_data.Rg_cur, lf_data.EE(n));
+            lf_cont(lf_data.F0_cur, params.fs, lf_data.Ra_cur, lf_data.Rk_cur, lf_data.Rg_cur, lf_data.EE(n), lf_data.pulse);
 
 
-                const double F0min = 20.0;
-                const double F0max = 500.0;
-
-                double T0 = 1.0 / lf_data.F0_cur;
-                double Ta = lf_data.Ra_cur * T0;
-                double Te = ((1.0 + lf_data.Rk_cur) / (2.0 * lf_data.Rg_cur)) * T0;
-                double Tp = Te / (lf_data.Rk_cur + 1.0);
-                double Tb = ((1.0 - (lf_data.Rk_cur + 1.0) / (2.0 * lf_data.Rg_cur)) * 1.0 / lf_data.F0_cur);
-                double Tc = Tb + Te;
-
-                if (lf_data.F0_cur < F0min || lf_data.F0_cur > F0max) {
-                    break; // Return empty vector for invalid F0
-                } else {
-                    // Solve area balance using Newton-Raphson method
-                    double alpha, epsi;
-
-                    lfSource(alpha, epsi, Tc, params.fs, Tp, Te, Ta, lf_data.EE(n));
-
-                    double omega = M_PI / Tp;
-                    double E0 = -(std::abs(lf_data.EE(n))) / (std::exp(alpha * Te) * std::sin(omega * Te));
-
-                    // Generate open phase and closed phase and combine
-                    double dt = 1.0 / params.fs;
-
-                    size_t T1_size = static_cast<size_t>(std::round(Te / dt));
-                    size_t T2_size = static_cast<size_t>(std::round((Tc - Te) / dt));
-
-                    // Ensure T1_size and T2_size are positive
-                    T1_size = std::max(T1_size, static_cast<size_t>(1));
-                    T2_size = std::max(T2_size, static_cast<size_t>(1));
-
-                    gsl::vector T1(T1_size);
-                    gsl::vector T2(T2_size);
-
-                    for (size_t i = 0; i < T1_size; i++) {
-                        double t = dt * i;
-                        T1[i] = E0 * std::exp(alpha * t) * std::sin(omega * t);
-                    }
-
-                    for (size_t i = 0; i < T2_size; i++) {
-                        double t = (T1_size * dt) + dt * i;
-                        T2[i] = (-lf_data.EE(n) / (epsi * Ta)) * (std::exp(-epsi * (t - Te)) - std::exp(-epsi * Tb));
-                    }
-
-                    gsl::vector g_LF(T1_size + T2_size);
-                    for (size_t i = 0; i < T1_size; i++) {
-                        g_LF[i] = T1[i];
-                    }
-
-                    for (size_t i = 0; i < T2_size; i++) {
-                        g_LF[T1_size + i] = T2[i];
-                    }
-                    lf_data.pulse = g_LF;
-
-                }
-
-
-                lf_data.LFgroup = makePulseCentGCI(lf_data.pulse, pulseLen, data.gci_inds(n)-start, finish-data.gci_inds(n));
+            lf_data.LFgroup = makePulseCentGCI(lf_data.pulse, pulseLen, data.gci_inds(n)-start, finish-data.gci_inds(n));
 
 
 
-                //  glot_seg_spec=20*log10(abs(fft(glot_seg)));
-                size_t fft_len = lf_data.LFgroup.size() ;
+            //  glot_seg_spec=20*log10(abs(fft(glot_seg)));
+            size_t fft_len = lf_data.LFgroup.size() ;
 
-                ComplexVector LFgroup_win_spec(fft_len);
-                // Perform FFT on glot_seg
-                FFTRadix2(lf_data.LFgroup, fft_len, &LFgroup_win_spec);
-                lf_data.LFgroup_win_spec = LFgroup_win_spec.getAbs();
+            ComplexVector LFgroup_win_spec(fft_len);
+            // Perform FFT on glot_seg
+//                FFTRadix2(lf_data.LFgroup, fft_len, &LFgroup_win_spec);
+            FFTRadix2(lf_data.LFgroup, fft_len, &LFgroup_win_spec);
+            lf_data.LFgroup_win_spec = LFgroup_win_spec.getAbs();
 
-                for (size_t i = 0; i < lf_data.LFgroup_win_spec.size(); i++) {
-                    lf_data.LFgroup_win_spec(i) = 20 * log10(lf_data.LFgroup_win_spec(i));
-                }
-
-
-                lf_data.LFgroup_win = lf_data.LFgroup;
-    //            double cor_time = gsl_stats_correlation(&lf_data.glot_seg[0], 1, &lf_data.LFgroup_win[0], 1, lf_data.glot_seg.size());
-                lf_data.cor_time = computeCorrelation(lf_data.glot_seg, lf_data.LFgroup_win);
-                lf_data.cor_time = std::abs(lf_data.cor_time);
-                lf_data.err_time = 1 - lf_data.cor_time;
-
-                lf_data.err_mat_time[m] = lf_data.err_time;
-
-                //            % Frequency domain error function
-                //            cor_freq = corrcoef(glot_seg_spec(freq<MVF),LFgroup_win_spec(freq<MVF));
-                //            cor_freq=abs(cor_freq(2));
-                //            err_freq=1-cor_freq;
+            for (size_t i = 0; i < lf_data.LFgroup_win_spec.size(); i++) {
+                lf_data.LFgroup_win_spec(i) = 20 * log10(lf_data.LFgroup_win_spec(i));
+            }
 
 
-                lf_data.cor_freq = computeCorrelation(lf_data.glot_seg_spec, lf_data.LFgroup_win_spec);
-                lf_data.cor_freq = std::abs(lf_data.cor_freq);
-                lf_data.err_freq = 1 - lf_data.cor_freq;
+            lf_data.LFgroup_win = lf_data.LFgroup;
+//            double cor_time = gsl_stats_correlation(&lf_data.glot_seg[0], 1, &lf_data.LFgroup_win[0], 1, lf_data.glot_seg.size());
+            lf_data.cor_time = computeCorrelation(lf_data.glot_seg, lf_data.LFgroup_win);
+            lf_data.cor_time = std::abs(lf_data.cor_time);
+            lf_data.err_time = 1 - lf_data.cor_time;
+
+            lf_data.err_mat_time[m] = lf_data.err_time;
+
+            //            % Frequency domain error function
+            //            cor_freq = corrcoef(glot_seg_spec(freq<MVF),LFgroup_win_spec(freq<MVF));
+            //            cor_freq=abs(cor_freq(2));
+            //            err_freq=1-cor_freq;
 
 
-                //            % Combined error with weights
-                //            err_mat(m)=(err_time*time_wgt)+(err_freq*freq_wgt);
+            lf_data.cor_freq = computeCorrelation(lf_data.glot_seg_spec, lf_data.LFgroup_win_spec);
+            lf_data.cor_freq = std::abs(lf_data.cor_freq);
+            lf_data.err_freq = 1 - lf_data.cor_freq;
 
-                // Combined error with weights
-                lf_data.err_mat[m] = (lf_data.err_time * time_wgt) + (lf_data.err_freq * freq_wgt);
 
-                // Copy err_mat to a new vector for sorting
-                lf_data.err_mat_sort = lf_data.err_mat;
+            //            % Combined error with weights
+            //            err_mat(m)=(err_time*time_wgt)+(err_freq*freq_wgt);
+
+            // Combined error with weights
+            lf_data.err_mat[m] = (lf_data.err_time * time_wgt) + (lf_data.err_freq * freq_wgt);
+
+            // Copy err_mat to a new vector for sorting
+            lf_data.err_mat_sort = lf_data.err_mat;
 
             }
 
@@ -851,28 +836,16 @@ int main(int argc, char *argv[]) {
 
             //        Find optimum Rd value (dynamic programming)
             if (n > 1) {
-//                lf_data.costm(ncands, ncands); // transition cost matrix: rows (previous), cols (current)
-//                lf_data.costm.set_all(0); // Initialize costm to all zeros
+                gsl::matrix costm(ncands, ncands); // transition cost matrix: rows (previous), cols (current)
+                costm.set_all(0); // Initialize costm to all zeros
 
                 for (int c = 0; c < ncands; ++c) {
                     // Transitions TO states in current frame
+                    Rd2R(lf_data.Rd_n(n, c), lf_data.EE(n), lf_data.F0_cur, lf_data.Ra_try, lf_data.Rk_try, lf_data.Rg_try);
 
-                    double Ra_try = (-1 + (4.8 * lf_data.Rd_n(n, c))) / 100;
-                    double Rk_try = (22.4 + (11.8 * lf_data.Rd_n(n, c))) / 100;
-                    double EI = (M_PI * Rk_try * lf_data.EE(n)) / 2;
-                    double UP = (lf_data.Rd_n(n, c) * lf_data.EE(n)) / (10 * lf_data.F0_cur);
-                    double Rg_try = EI / (lf_data.F0_cur * UP * M_PI);
-
-
-                    //            LFpulse_cur = lf_cont(F0_cur,fs,Ra_try,Rk_try,Rg_try,EE(n));
-//                    void lf_cont(double F0, double fs, double Ra, double Rk, double Rg, double EE, gsl::vector& g_LF) {
-
-                    lf_cont(lf_data.F0_cur, params.fs, Ra_try, Rk_try, Rg_try, lf_data.EE(n), lf_data.LFpulse_cur);
-
+                    lf_cont(lf_data.F0_cur, params.fs, lf_data.Ra_try, lf_data.Rk_try, lf_data.Rg_try, lf_data.EE(n), lf_data.LFpulse_cur);
 
                     for (int p = 0; p < ncands; ++p) {
-
-
 
                         // Transitions FROM states in previous frame
 //                        [Ra_prev,Rk_prev,Rg_prev] = Rd2R(Rd_n(n-1,p),EE(n),F0_cur);
@@ -883,24 +856,26 @@ int main(int argc, char *argv[]) {
 
                         lf_cont(lf_data.F0_cur, params.fs, lf_data.Ra_prev, lf_data.Rk_prev, lf_data.Rg_cur, lf_data.EE(n), lf_data.LFpulse_prev);
 
+//                        std::cout << "lf_data.LFpulse_cur(0)"<< lf_data.LFpulse_prev << std::endl;
 
 
 
 
 
-//                        if (std::isnan( lf_data.LFpulse_cur(0)) || std::isnan( lf_data.LFpulse_prev(0))) {
-////                            costm(p, c) = 0;
-//                        } else {
-////                            gsl::matrix cor_cur = computeCorrelation( lf_data.LFpulse_cur,  lf_data.LFpulse_prev);
-////                            double cor_val = cor_cur(0, 1);
-////                            costm(p, c) = (1 - std::abs(cor_val)) * trans_wgt; // transition cost
-//                        }
+                        if (std::isnan( lf_data.LFpulse_cur(0)) || std::isnan( lf_data.LFpulse_prev(0))) {
+                            costm(p, c) = 0;
+                        } else {
+                            gsl::matrix cor_cur = computeCorrelationMatrix( lf_data.LFpulse_cur,  lf_data.LFpulse_prev);
+                            double cor_val = cor_cur(0, 1);
+                            costm(p, c) = (1 - std::abs(cor_val)) * trans_wgt; // transition cost
+
+                            std::cout << "cor_val"<<cor_val << std::endl;
+
+                        }
 
 
 
 
-
-                        std::cout << "lf_data.Rd_n"<< lf_data.LFpulse_prev(0) << std::endl;
 
 //                        gsl::vector LFpulse_prev = lf_cont(F0_cur, fs, Ra_prev, Rk_prev, Rg_prev, lf_data.EE(n));
 
@@ -912,6 +887,7 @@ int main(int argc, char *argv[]) {
 //                            costm(p, c) = (1 - std::abs(cor_val)) * trans_wgt; // transition cost
 //                        }
                     }
+
 
 
 
@@ -965,7 +941,6 @@ int main(int argc, char *argv[]) {
 //        {
 //            int index = lf_data.err_mat_sortIdx[c];
 //
-//            std::cout << "sss"<<data.gci_inds.size() << std::endl;
 //
 //        }
 
