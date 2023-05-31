@@ -68,6 +68,7 @@
 #include <gsl/gsl_sort_vector.h>
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_permutation.h>
+#include <gsl/gsl_vector_int.h>
 
 
 
@@ -960,28 +961,38 @@ int main(int argc, char *argv[]) {
 
                     }
 
+//                    gsl::vector_int idx_values(n);  // Declare a gsl::vector_int to store the idx values
 
+                    lf_data.best.resize(n);  // Declare a gsl::vector_int to store the idx values
 
                     // Do traceback
-                    lf_data.best.resize(n);
-                    // Find the index of the minimum value in the subset of cost matrix
-                    double minVal = lf_data.cost(n, 0);
-                    size_t idx = 0;
+//                    lf_data.best.resize(n);
 
+                    for (size_t i = 0; i < n; ++i) {
+                        // Find the index of the minimum value in the subset of cost matrix
+                        double minVal = lf_data.cost(i, 0);
+                        size_t idx = 0;
 
-                    for (size_t i = 1; i < ncands; ++i) {
-                        if (lf_data.cost(n, i) < minVal) {
-                            minVal = lf_data.cost(n, i);
-                            idx = i;
-
+                        for (size_t j = 1; j < ncands; ++j) {
+                            if (lf_data.cost(i, j) < minVal) {
+                                minVal = lf_data.cost(i, j);
+                                idx = j;
+                            }
                         }
+
+                        lf_data.best(i) = static_cast<int>(idx);  // Store the idx value in the gsl::vector_int
                     }
 
-                    lf_data.best(n) = idx;
 
 
+                    std::cout << "best"<< lf_data.best.size() << std::endl;
 
-                    std::cout << "idx"<<idx << std::endl;
+//                    lf_data.best.set(n, static_cast<int>(idx));
+
+
+//                    std::cout << "n"<<n << std::endl;
+
+//                    std::cout << "idx"<<lf_data.best << std::endl;
 
 //                    best(n - 1) = gsl_vector_min_index(gsl_vector_subvector(gsl_matrix_row(&lf_data.cost, n - 1), 0, ncands - 1));
 //
