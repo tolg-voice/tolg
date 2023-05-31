@@ -69,10 +69,60 @@
 #include <gsl/gsl_vector.h>
 #include <gsl/gsl_permutation.h>
 #include <gsl/gsl_vector_int.h>
+#include <gsl/gsl_filter.h>
 
 
 
 const double pi = 3.1415926535897932384626433832795028841971693993751058209749445923078164062862089986280348253421170679;
+
+// Smooth function
+gsl::vector smooth(const gsl::vector& input, int windowSize)
+{
+    gsl::vector output(input.size());
+    int halfWindowSize = windowSize / 2;
+
+    for (int i = 0; i < input.size(); i++)
+    {
+        double sum = 0.0;
+        int count = 0;
+
+        for (int j = i - halfWindowSize; j <= i + halfWindowSize; j++)
+        {
+            if (j >= 0 && j < input.size())
+            {
+                sum += input[j];
+                count++;
+            }
+        }
+
+        output[i] = sum / count;
+    }
+
+    return output;
+}
+
+// Medfilt1 function
+gsl::vector medfilt1(const gsl::vector& input, int windowSize)
+{
+    gsl::vector output(input.size());
+    int halfWindowSize = windowSize / 2;
+
+    for (int i = 0; i < input.size(); i++)
+    {
+        std::vector<double> window;
+
+        for (int j = i - halfWindowSize; j <= i + halfWindowSize; j++)
+        {
+            if (j >= 0 && j < input.size())
+                window.push_back(input[j]);
+        }
+
+        std::sort(window.begin(), window.end());
+        output[i] = window[windowSize / 2];
+    }
+
+    return output;
+}
 
 /* summation function */
 double sum(double a[], int size)
@@ -961,49 +1011,13 @@ int main(int argc, char *argv[]) {
 
                     }
 
-//                    gsl::vector_int idx_values(n);  // Declare a gsl::vector_int to store the idx values
 
-                    lf_data.best.resize(n);  // Declare a gsl::vector_int to store the idx values
 
-                    // Do traceback
-//                    lf_data.best.resize(n);
-
-                    for (size_t i = 0; i < n; ++i) {
-                        // Find the index of the minimum value in the subset of cost matrix
-                        double minVal = lf_data.cost(i, 0);
-                        size_t idx = 0;
-
-                        for (size_t j = 1; j < ncands; ++j) {
-                            if (lf_data.cost(i, j) < minVal) {
-                                minVal = lf_data.cost(i, j);
-                                idx = j;
-                            }
-                        }
-
-                        lf_data.best(i) = static_cast<int>(idx);  // Store the idx value in the gsl::vector_int
-                    }
+//                    std::cout << "best"<<  lf_data.Rd_n(n, lf_data.best[n]) << std::endl;
 
 
 
-                    std::cout << "best"<< lf_data.best.size() << std::endl;
 
-//                    lf_data.best.set(n, static_cast<int>(idx));
-
-
-//                    std::cout << "n"<<n << std::endl;
-
-//                    std::cout << "idx"<<lf_data.best << std::endl;
-
-//                    best(n - 1) = gsl_vector_min_index(gsl_vector_subvector(gsl_matrix_row(&lf_data.cost, n - 1), 0, ncands - 1));
-//
-//                    for (int i = n; i >= 2; i--) {
-//                        best(i - 2) = lf_data.prev(i, best(i - 1));
-//                    }
-
-//                    gsl::vector Rd_opt(nframe);
-//                    for (int n = 0; n < nframe; n++) {
-//                        Rd_opt(n) = Rd_n(n, best(n));
-//                    }
 //
 //                    // Apply median filtering, smoothing, and scaling
 //                    std::vector<double> Rd_opt_filtered = medfilt1(Rd_opt, 11);
@@ -1042,6 +1056,38 @@ int main(int argc, char *argv[]) {
 //                lf_data.prev.set_row(n, previ);
 
             }
+
+
+//                    gsl::vector_int idx_values(n);  // Declare a gsl::vector_int to store the idx values
+
+        lf_data.best.resize(n);  // Declare a gsl::vector_int to store the idx values
+        lf_data.best.set_zero(); // Declare a gsl::vector_int to store the idx values
+
+        // Do traceback
+//                    lf_data.best.resize(n);
+
+        for (size_t i = 0; i < n; ++i) {
+            // Find the index of the minimum value in the subset of cost matrix
+            double minVal = lf_data.cost(i, 0);
+            size_t idx = 0;
+
+            for (size_t j = 1; j < ncands; ++j) {
+                if (lf_data.cost(i, j) < minVal) {
+                    minVal = lf_data.cost(i, j);
+                    idx = j;
+                }
+            }
+
+            lf_data.best(i) = static_cast<int>(idx);  // Store the idx value in the gsl::vector_int
+        }
+
+
+
+        for (int i = n; i >= 2; i--) {
+            lf_data.best(i - 2) = lf_data.prev(i, lf_data.best(i - 1));
+        }
+
+
 
 
 
@@ -1088,9 +1134,32 @@ int main(int argc, char *argv[]) {
 
     }
 
+    lf_data.Rd_opt.resize(nframe);
+    lf_data.Rd_opt.set_zero(); // Declare a gsl::vector_int to store the idx values
+
+
+    for (int n = 0; n < nframe-3; n++) {
+
+        lf_data.Rd_opt[n] = lf_data.Rd_n(n, lf_data.best[n]);
+//            std::cout <<   lf_data.Rd_opt[n] << std::endl;
+
+    }
 
 
 
+
+    medfilt1(lf_data.Rd_opt, 11);
+
+    smooth(lf_data.Rd_opt, 5);
+
+    // Scale by 0.5
+    for (size_t i = 0; i < lf_data.Rd_opt.size(); i++) {
+        lf_data.Rd_opt[i] *= 0.5;
+    }
+
+
+
+    std::cout << "n"<< lf_data.Rd_opt << std::endl;
 
 
 
