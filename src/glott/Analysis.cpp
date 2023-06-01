@@ -523,16 +523,6 @@ gsl::matrix computeCorrelationMatrix(const gsl::vector& X, const gsl::vector& Y)
 }
 
 
-size_t nextPowerOf2(size_t n) {
-    size_t power = 1;
-    while (power < n) {
-        power <<= 1;
-    }
-    return power;
-}
-
-
-
 
 std::vector<double> medfilt1(const std::vector<double>& input, int windowSize) {
     std::vector<double> output(input.size());
@@ -665,9 +655,7 @@ int main(int argc, char *argv[]) {
    /* Write analyzed features to files */
    data.SaveData(params);
 
-   /* Finish */
-//   std::cout << "Finished analysis." << std::endl << std::endl;
-
+   // start to do the Rd param extraction
 
     LfData lf_data;
 
@@ -731,11 +719,10 @@ int main(int argc, char *argv[]) {
         // pulseLen=abs(pulseLen);
         pulseLen = std::abs(pulseLen);
 
-//        if GCI(n)-round(pulseLen/2) > 0
-//            start=GCI(n)-round(pulseLen/2);
-//        else start=1;
-//        end
-
+        //        if GCI(n)-round(pulseLen/2) > 0
+        //            start=GCI(n)-round(pulseLen/2);
+        //        else start=1;
+        //        end
         int start;
         int finish;
 
@@ -744,10 +731,10 @@ int main(int argc, char *argv[]) {
         } else {
             start = 1;
         }
-//        if GCI(n)+round(pulseLen/2) <= length(glot)
-//        finish = GCI(n)+round(pulseLen/2);
-//        else finish = length(glot);
-//        end
+        //        if GCI(n)+round(pulseLen/2) <= length(glot)
+        //        finish = GCI(n)+round(pulseLen/2);
+        //        else finish = length(glot);
+        //        end
         if (data.gci_inds[n] + round(pulseLen / 2) <= data.source_signal.size())
         {
             finish = data.gci_inds[n] + round(pulseLen / 2);
@@ -757,8 +744,8 @@ int main(int argc, char *argv[]) {
             finish = data.source_signal.size();
         }
 
-//        glot_seg=glot(start:finish);
-//        glot_seg=glot_seg(:);
+        //        glot_seg=glot(start:finish);
+        //        glot_seg=glot_seg(:);
         int segment_length = finish - start + 1;
 
 
@@ -768,9 +755,9 @@ int main(int argc, char *argv[]) {
         {
             lf_data.glot_seg[i - start] = data.source_signal[i];
         }
-//        std::cout << "lf_data.glot_seg" << lf_data.glot_seg  << std::endl;
-//
-//        glot_seg_spec=20*log10(abs(fft(glot_seg)));
+        //        std::cout << "lf_data.glot_seg" << lf_data.glot_seg  << std::endl;
+        //        glot_seg_spec=20*log10(abs(fft(glot_seg)));
+
         size_t fft_len = lf_data.glot_seg.size();
         ComplexVector glot_seg_spec(fft_len);
         // Perform FFT on glot_seg
@@ -780,15 +767,16 @@ int main(int argc, char *argv[]) {
 
         for (size_t i = 0; i < lf_data.glot_seg_spec.size(); i++) {
             lf_data.glot_seg_spec(i) = 20 * log10(lf_data.glot_seg_spec(i));
-//                std::cout << lf_data.glot_seg_fft_mag(i) << std::endl;
-//                lf_data.glot_seg_log_mag(i) = val;  // Min log-power = -60dB
+            //      std::cout << lf_data.glot_seg_fft_mag(i) << std::endl;
+            //      lf_data.glot_seg_log_mag(i) = val;  // Min log-power = -60dB
         }
 
         //   freq=linspace(0,fs,length(glot_seg));
         lf_data.freq.resize(lf_data.glot_seg.size());
-//            double start = 0.0;
-//            double stop = params.fs;
-//            double step = (stop - start) / (lf_data.glot_seg.size() - 1);
+
+        //  double start = 0.0;
+        //  double stop = params.fs;
+        //  double step = (stop - start) / (lf_data.glot_seg.size() - 1);
 
         for (size_t i = 0; i < lf_data.glot_seg.size(); i++) {
             lf_data.freq(i) = 0.0 + i * ((params.fs - 0.0) / (lf_data.glot_seg.size() - 1));
@@ -808,23 +796,15 @@ int main(int argc, char *argv[]) {
         double abs_min_value = std::abs(min_value);
         lf_data.EE(n) = abs_min_value;
 
-// Randomly generate the length for lf_data.pulse
-
 
         // for m=1:length(Rd_set)
         for (int m = 0; m < lf_data.Rd_set.size(); ++m) {
 
-
             Rd2R(lf_data.Rd_set(m), lf_data.EE(n), lf_data.F0_cur, lf_data.Ra_cur, lf_data.Rk_cur, lf_data.Rg_cur);
-
-
 
             lf_cont(lf_data.F0_cur, params.fs, lf_data.Ra_cur, lf_data.Rk_cur, lf_data.Rg_cur, lf_data.EE(n), lf_data.pulse);
 
-
             lf_data.LFgroup = makePulseCentGCI(lf_data.pulse, pulseLen, data.gci_inds(n)-start, finish-data.gci_inds(n));
-
-
 
             //  glot_seg_spec=20*log10(abs(fft(glot_seg)));
             size_t fft_len = lf_data.LFgroup.size() ;
@@ -841,7 +821,7 @@ int main(int argc, char *argv[]) {
 
 
             lf_data.LFgroup_win = lf_data.LFgroup;
-//            double cor_time = gsl_stats_correlation(&lf_data.glot_seg[0], 1, &lf_data.LFgroup_win[0], 1, lf_data.glot_seg.size());
+            // double cor_time = gsl_stats_correlation(&lf_data.glot_seg[0], 1, &lf_data.LFgroup_win[0], 1, lf_data.glot_seg.size());
             lf_data.cor_time = computeCorrelation(lf_data.glot_seg, lf_data.LFgroup_win);
             lf_data.cor_time = std::abs(lf_data.cor_time);
             lf_data.err_time = 1 - lf_data.cor_time;
@@ -905,17 +885,6 @@ int main(int argc, char *argv[]) {
 
             lf_data.Rd_set_err_mat_sortVal.resize(lf_data.Rd_set_err_mat_sortIdx.size());
 
-
-            //        for (size_t i = 0; i < lf_data.Rd_set_err_mat_sortIdx.size(); i++)
-            //        {
-            //            int index = lf_data.Rd_set_err_mat_sortIdx[i];
-            //            lf_data.Rd_set_err_mat_sortVal(i) = lf_data.Rd_set[index];
-            //            lf_data.Rd_n(n, i) = lf_data.Rd_set_err_mat_sortVal(i);
-            //
-            //            // Do something with the value
-            //            // For example, print it
-            //        }
-
             for (size_t i = 0; i < ncands; i++)
             {
                 int index = lf_data.Rd_set_err_mat_sortIdx[i];
@@ -925,7 +894,6 @@ int main(int argc, char *argv[]) {
 
             // exh_err_n=err_mat_sort(1:ncands);
             lf_data.exh_err_n = lf_data.err_mat_sort.subvector(1, ncands);
-
 
             for (size_t i = 0; i < ncands; i++)
             {
@@ -946,17 +914,12 @@ int main(int argc, char *argv[]) {
                     for (int p = 0; p < ncands; ++p) {
 
                         // Transitions FROM states in previous frame
-//                        [Ra_prev,Rk_prev,Rg_prev] = Rd2R(Rd_n(n-1,p),EE(n),F0_cur);
+                        // [Ra_prev,Rk_prev,Rg_prev] = Rd2R(Rd_n(n-1,p),EE(n),F0_cur);
 
                         Rd2R(lf_data.Rd_n(n-1,p), lf_data.EE(n), lf_data.F0_cur, lf_data.Ra_prev, lf_data.Rk_prev, lf_data.Rg_prev);
 
                         // LFpulse_prev = lf_cont(F0_cur,fs,Ra_prev,Rk_prev,Rg_prev,EE(n));
-
                         lf_cont(lf_data.F0_cur, params.fs, lf_data.Ra_prev, lf_data.Rk_prev, lf_data.Rg_cur, lf_data.EE(n), lf_data.LFpulse_prev);
-
-
-
-
 
 
                         if (std::isnan( lf_data.LFpulse_cur(0)) || std::isnan( lf_data.LFpulse_prev(0))) {
@@ -965,18 +928,12 @@ int main(int argc, char *argv[]) {
                             gsl::matrix cor_cur = computeCorrelationMatrix( lf_data.LFpulse_cur,  lf_data.LFpulse_prev);
                             double cor_val = cor_cur(0, 1);
                             costm(p, c) = (1 - std::abs(cor_val)) * trans_wgt; // transition cost
-
-//                            std::cout << "cor_val"<<costm << std::endl;
-
                         }
 
-//                        costm=costm+repmat(cost(n-1,1:ncands)',1,ncands);  % add in cumulative costs
-//                        [costi,previ]=min(costm,[],1);
-//                        cost(n,1:ncands)=cost(n,1:ncands)+costi;
-//                        prev(n,1:ncands)=previ;
-
-
-
+                        //           costm=costm+repmat(cost(n-1,1:ncands)',1,ncands);  % add in cumulative costs
+                        //           [costi,previ]=min(costm,[],1);
+                        //           cost(n,1:ncands)=cost(n,1:ncands)+costi;
+                        //           prev(n,1:ncands)=previ;
                         std::vector<double> costi(ncands);
                         std::vector<int> previ(ncands);
 
@@ -997,74 +954,22 @@ int main(int argc, char *argv[]) {
                             lf_data.cost(n, j) += costi[previ[j]];
                         }
 
-// Update prev matrix
+                        // Update prev matrix
                         for (int j = 0; j < ncands; j++) {
                             lf_data.prev(n, j) = previ[j];
                         }
-
-
-//                        std::cout << "lf_data.lf_data.prev"<< lf_data.prev << std::endl;
-
-
-
-
-
                     }
-
-
-
-//                    std::cout << "best"<<  lf_data.Rd_n(n, lf_data.best[n]) << std::endl;
-
-
-
-
-//
-//                    // Apply median filtering, smoothing, and scaling
-//                    std::vector<double> Rd_opt_filtered = medfilt1(Rd_opt, 11);
-//                    std::vector<double> Rd_opt_smoothed = smooth(Rd_opt_filtered, 5);
-//                    std::transform(Rd_opt_smoothed.begin(), Rd_opt_smoothed.end(), Rd_opt.begin(), Rd_opt.begin(), std::multiplies<double>());
-
-//                    params.Rd = Rd_opt;
-
-
-//                    for (int p = 0; p < ncands; ++p) {
-//                        // Transitions FROM states in previous frame
-//                        gsl::vector Ra_prev, Rk_prev, Rg_prev;
-//                        Rd2R(lf_data.Rd_n(n - 1, p), lf_data.EE(n), lf_data.F0_cur, Ra_prev, Rk_prev, Rg_prev);
-//                        gsl::vector LFpulse_prev = lf_cont(lf_data.F0_cur, params.fs, Ra_prev, Rk_prev, Rg_prev, lf_data.EE(n));
-//
-//                        if (std::isnan(LFpulse_cur(0)) || std::isnan(LFpulse_prev(0))) {
-//                            costm(p, c) = 0;
-//                        } else {
-//                            gsl::matrix cor_cur = computeCorrelation(LFpulse_cur, LFpulse_prev);
-//                            double cor_val = cor_cur(0, 1);
-//                            costm(p, c) = (1 - std::abs(cor_val)) * trans_wgt; // transition cost
-//                        }
-//                    }
                 }
-
-//                // Add cumulative costs to costm
-//                gsl::vector prev_costs = lf_data.cost.row(n - 1).subvector(0, ncands);
-//                costm.add_row(prev_costs);
-//
-//                // Find minimum costs and corresponding indices
-//                gsl::vector costi, previ;
-//                gsl::matrix_min_rows(costm, costi, previ);
-//
-//                // Update cost and prev matrices
-//                lf_data.cost.set_row(n, cost.row(n) + costi);
-//                lf_data.prev.set_row(n, previ);
-
             }
 
 
-//                    gsl::vector_int idx_values(n);  // Declare a gsl::vector_int to store the idx values
+        // gsl::vector_int idx_values(n);  // Declare a gsl::vector_int to store the idx values
 
         lf_data.best.resize(n);  // Declare a gsl::vector_int to store the idx values
         lf_data.best.set_zero(); // Declare a gsl::vector_int to store the idx values
 
         // Do traceback
-//                    lf_data.best.resize(n);
+        // lf_data.best.resize(n);
 
         for (size_t i = 0; i < n; ++i) {
             // Find the index of the minimum value in the subset of cost matrix
@@ -1082,56 +987,9 @@ int main(int argc, char *argv[]) {
         }
 
 
-
         for (int i = n; i >= 2; i--) {
             lf_data.best(i - 2) = lf_data.prev(i, lf_data.best(i - 1));
         }
-
-
-
-
-
-
-
-//        for (int c = 0; c < lf_data.Rd_set_err_mat_sortIdx.size(); c++)
-//        {
-//            int index = lf_data.err_mat_sortIdx[c];
-//
-//
-//        }
-
-
-
-//        for (int c = 0; c < ncands; c++)
-//        {
-//            int index = lf_data.err_mat_sortIdx[c];
-//
-//
-//        }
-
-
-
-
-
-//                gsl::vector_subvector_view clippedView = gsl::vector_subvector(lf_data.err_mat_sortIdx, 1, 5);
-//
-//        std::cout << lf_data.Rd_set_err_mat_sortIdx << std::endl;
-//
-//                lf_data.Rd_set_err_mat_sortIdx = lf_data.err_mat_sortIdx[1:ncands]
-//         Nested loops to assign values from Rd_set to lf_data.Rd_n
-//            lf_data.Rd_n(n, c) = lf_data.Rd_set[index];
-
-
-//            lf_data.Rd_n.row(n).set_all(lf_data.Rd_set[index]);
-
-
-
-
-
-
-
-
-
     }
 
     lf_data.Rd_opt.resize(nframe);
@@ -1146,50 +1004,18 @@ int main(int argc, char *argv[]) {
     }
 
 
-
-
     medfilt1(lf_data.Rd_opt, 11);
 
     smooth(lf_data.Rd_opt, 5);
 
     // Scale by 0.5
-    for (size_t i = 0; i < lf_data.Rd_opt.size(); i++) {
-        lf_data.Rd_opt[i] *= 0.5;
-    }
-
-
-
-    std::cout << "n"<< lf_data.Rd_opt << std::endl;
-
-
-
-
-
-
-
-    //   Glottal Source signal is: "data.source_signal" >> glot
-    //   GCI signal is: data.gci_inds  >> GCI
-
-    //    std::vector<double> EE(data.gci_inds.size(), 0.0);
-//    std::vector<double> Rd_set;
-//    double start = 0.3;
-//    double step = 0.17;
-//    double end = 2.0;
-//
-//    for (double value = start; value <= end; value += step) {
-//        Rd_set.push_back(value);
+//    for (size_t i = 0; i < lf_data.Rd_opt.size(); i++) {
+//        lf_data.Rd_opt[i] *= 0.5;
 //    }
-//    double pulseNum = 2;
-//
-//    // Dynamic programming settings
-//    double nframe = data.gci_inds.size();
-//    double ncands = 5;
-//
-//
-//    std::vector<std::vector<double>> Rd_n(nframe, std::vector<double>(ncands, 0.0));
-//    std::vector<std::vector<double>> cost(nframe, std::vector<double>(ncands, 0.0));
-//    std::vector<std::vector<double>> prev(nframe, std::vector<int>(ncands, 0));
 
+    /* Finish */
+    std::cout << "Finished analysis." << std::endl << std::endl;
+    std::cout << "Rd_opt params"<< lf_data.Rd_opt << std::endl;
 
 
 
