@@ -1,4 +1,5 @@
 // Copyright 2016-2018 Lauri Juvela and Manu Airaksinen
+// LF modelling extraction code Copyright: Phonetics and Speech Laboratory, Trinity College Dublin
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,9 +13,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//  <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
-//               GlottDNN Speech Parameter Extractor
-//  <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+//  <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
+//               GlottDNN Speech Parameter Extractor including LF modelling Rd extraction
+//  <><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><><>
 //
 //  This program reads a speech file and extracts speech
 //  parameters using glottal inverse filtering.
@@ -27,9 +28,13 @@
 //
 //  Authors: Lauri Juvela, Manu Airaksinen
 //  Acknowledgements: Tuomo Raitio, Paavo Alku
-//
 //  File Analysis.cpp
 //  Version: 1.0
+
+// This program referred the Matlab code from the original @ Voice_Analysis_Toolkit https://github.com/jckane/Voice_Analysis_Toolkit
+// written by John Kane (Phonetics and Speech Laboratory, Trinity College Dublin) in Matlab, now re-factored and re-written in C++
+// Author: Xiao Zhang (Phonetics and Speech Laboratory, Trinity College Dublin)  zhangx16@tcd.ie
+
 
 
 /***********************************************/
