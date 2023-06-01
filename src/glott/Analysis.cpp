@@ -660,10 +660,11 @@ int main(int argc, char *argv[]) {
    /* Write analyzed features to files */
    data.SaveData(params);
 
-   // start to do the Rd param extraction
-
+    // start to do the Rd param extraction
+    // declare the struct variable
     LfData lf_data;
 
+    // Dynamic programming weights
     double time_wgt = 0.1;
     double freq_wgt = 0.3;
     double trans_wgt = 0.3;
@@ -679,11 +680,15 @@ int main(int argc, char *argv[]) {
     //    double end = 2.0;
     int size = static_cast<int>((2.0 - 0.3) / 0.17) + 2;
 
+
+
     lf_data.Rd_set.resize(size);
     for (int i = 0; i < size; i++) {
         double value = 0.3 + i * 0.17;
         lf_data.Rd_set[i] = value;
     }
+
+
 
     // pulseNum=2;
     double pulseNum = 2;
@@ -724,6 +729,7 @@ int main(int argc, char *argv[]) {
         // pulseLen=abs(pulseLen);
         pulseLen = std::abs(pulseLen);
 
+
         //        if GCI(n)-round(pulseLen/2) > 0
         //            start=GCI(n)-round(pulseLen/2);
         //        else start=1;
@@ -736,6 +742,8 @@ int main(int argc, char *argv[]) {
         } else {
             start = 1;
         }
+
+
         //        if GCI(n)+round(pulseLen/2) <= length(glot)
         //        finish = GCI(n)+round(pulseLen/2);
         //        else finish = length(glot);
@@ -749,19 +757,22 @@ int main(int argc, char *argv[]) {
             finish = data.source_signal.size();
         }
 
+
+
         //        glot_seg=glot(start:finish);
         //        glot_seg=glot_seg(:);
         int segment_length = finish - start + 1;
-
-
         lf_data.glot_seg.resize(segment_length);
+
+
+
 
         for (int i = start; i <= finish; ++i)
         {
             lf_data.glot_seg[i - start] = data.source_signal[i];
         }
-        //        std::cout << "lf_data.glot_seg" << lf_data.glot_seg  << std::endl;
         //        glot_seg_spec=20*log10(abs(fft(glot_seg)));
+
 
         size_t fft_len = lf_data.glot_seg.size();
         ComplexVector glot_seg_spec(fft_len);
@@ -772,9 +783,12 @@ int main(int argc, char *argv[]) {
 
         for (size_t i = 0; i < lf_data.glot_seg_spec.size(); i++) {
             lf_data.glot_seg_spec(i) = 20 * log10(lf_data.glot_seg_spec(i));
-            //      std::cout << lf_data.glot_seg_fft_mag(i) << std::endl;
-            //      lf_data.glot_seg_log_mag(i) = val;  // Min log-power = -60dB
         }
+
+//        ComplexVector temp_spec;
+//        FFTRadix2(lf_data.glot_seg,&temp_spec);
+//
+//        gsl::vector temp = temp_spec.getAbs();
 
         //   freq=linspace(0,fs,length(glot_seg));
         lf_data.freq.resize(lf_data.glot_seg.size());
@@ -786,6 +800,8 @@ int main(int argc, char *argv[]) {
         for (size_t i = 0; i < lf_data.glot_seg.size(); i++) {
             lf_data.freq(i) = 0.0 + i * ((params.fs - 0.0) / (lf_data.glot_seg.size() - 1));
         }
+
+
 
         // err_mat=zeros(1,length(Rd_set));
         lf_data.err_mat.resize(lf_data.Rd_set.size());
@@ -804,14 +820,21 @@ int main(int argc, char *argv[]) {
 
         // for m=1:length(Rd_set)
         for (int m = 0; m < lf_data.Rd_set.size(); ++m) {
-
+            //         [Ra_cur,Rk_cur,Rg_cur] = Rd2R(Rd_set(m),EE(n),F0_cur);
             Rd2R(lf_data.Rd_set(m), lf_data.EE(n), lf_data.F0_cur, lf_data.Ra_cur, lf_data.Rk_cur, lf_data.Rg_cur);
 
+            //          pulse = lf_cont(F0_cur,fs,Ra_cur,Rk_cur,Rg_cur,EE(n));
             lf_cont(lf_data.F0_cur, params.fs, lf_data.Ra_cur, lf_data.Rk_cur, lf_data.Rg_cur, lf_data.EE(n), lf_data.pulse);
 
+            // LFgroup = makePulseCentGCI(pulse,pulseLen,GCI(n)-start,finish-GCI(n));
             lf_data.LFgroup = makePulseCentGCI(lf_data.pulse, pulseLen, data.gci_inds(n)-start, finish-data.gci_inds(n));
 
+            // LFgroup_win=LFgroup(:);
+            lf_data.LFgroup_win = lf_data.LFgroup;
+
+
             //  glot_seg_spec=20*log10(abs(fft(glot_seg)));
+            //  the glot_seg_spec is shorter than in Matlab
             size_t fft_len = lf_data.LFgroup.size() ;
 
             ComplexVector LFgroup_win_spec(fft_len);
@@ -824,19 +847,25 @@ int main(int argc, char *argv[]) {
                 lf_data.LFgroup_win_spec(i) = 20 * log10(lf_data.LFgroup_win_spec(i));
             }
 
+/******************************** Time domain error function **********************************************************/
+//                    cor_time = corrcoef(glot_seg,LFgroup_win);
+//                    cor_time=abs(cor_time(2));
+//                    err_time=1-cor_time;
+//                    err_mat_time(m)=err_time;
 
-            lf_data.LFgroup_win = lf_data.LFgroup;
-            // double cor_time = gsl_stats_correlation(&lf_data.glot_seg[0], 1, &lf_data.LFgroup_win[0], 1, lf_data.glot_seg.size());
+
             lf_data.cor_time = computeCorrelation(lf_data.glot_seg, lf_data.LFgroup_win);
             lf_data.cor_time = std::abs(lf_data.cor_time);
             lf_data.err_time = 1 - lf_data.cor_time;
-
             lf_data.err_mat_time[m] = lf_data.err_time;
 
-            //            % Frequency domain error function
-            //            cor_freq = corrcoef(glot_seg_spec(freq<MVF),LFgroup_win_spec(freq<MVF));
-            //            cor_freq=abs(cor_freq(2));
-            //            err_freq=1-cor_freq;
+
+
+/******************************* Frequency domain error function ******************************************************/
+//            % Frequency domain error function
+//            cor_freq = corrcoef(glot_seg_spec(freq<MVF),LFgroup_win_spec(freq<MVF));
+//            cor_freq=abs(cor_freq(2));
+//            err_freq=1-cor_freq;
 
 
             lf_data.cor_freq = computeCorrelation(lf_data.glot_seg_spec, lf_data.LFgroup_win_spec);
@@ -844,27 +873,26 @@ int main(int argc, char *argv[]) {
             lf_data.err_freq = 1 - lf_data.cor_freq;
 
 
-            //            % Combined error with weights
-            //            err_mat(m)=(err_time*time_wgt)+(err_freq*freq_wgt);
 
-            // Combined error with weights
+/******************************** Combined error with weights *********************************************************/
+//          err_mat(m)=(err_time*time_wgt)+(err_freq*freq_wgt);
+
             lf_data.err_mat[m] = (lf_data.err_time * time_wgt) + (lf_data.err_freq * freq_wgt);
+
+        }
+/******************************** Find best ncands (local costs and Rd values) ****************************************/
+//          [err_mat_sort,err_mat_sortIdx]=sort(err_mat);
+//          Rd_n(n,1:ncands)=Rd_set(err_mat_sortIdx(1:ncands));
+
 
             // Copy err_mat to a new vector for sorting
             lf_data.err_mat_sort = lf_data.err_mat;
 
-            }
-
-            //        % Find best ncands (local costs and Rd values)
-            //        [err_mat_sort,err_mat_sortIdx]=sort(err_mat);
-
-            std::vector<double> err_mat_sort_std(lf_data.err_mat_sort.size());  // Create a std::vector to store sorted elements
-            // Copy elements from gsl::vector to std::vector
+            // Convert gsl vector "err_mat_sort_std" into std::vector & Sort std::vector in ascending order
+            std::vector<double> err_mat_sort_std(lf_data.err_mat_sort.size());
             for (size_t i = 0; i < lf_data.err_mat_sort.size(); ++i) {
                 err_mat_sort_std[i] = lf_data.err_mat_sort[i];
             }
-
-            // Sort std::vector in ascending order
             std::sort(err_mat_sort_std.begin(), err_mat_sort_std.end());
 
             // Copy sorted elements back to gsl::vector
@@ -872,7 +900,7 @@ int main(int argc, char *argv[]) {
                 lf_data.err_mat_sort[i] = err_mat_sort_std[i];
             }
 
-
+            // Create a new vector called "err_mat_sortIdx"
             lf_data.err_mat_sortIdx.resize(lf_data.err_mat_sort.size());
             // Obtain the sorted indices
             for (size_t i = 0; i < lf_data.err_mat_sort.size(); ++i) {
@@ -885,9 +913,14 @@ int main(int argc, char *argv[]) {
             }
 
 
-            //        Rd_n(n,1:ncands)=Rd_set(err_mat_sortIdx(1:ncands));
+
+            //  Rd_n(n,1:ncands)=Rd_set(err_mat_sortIdx(1:ncands));
+
+                // 1. Get the err_mat_sortIdx(1:ncands) like the index value of the vectors
             lf_data.Rd_set_err_mat_sortIdx = lf_data.err_mat_sortIdx.subvector(1, ncands);
 
+
+                // 2. Use the ID vectors to tract the values to replace "Rd_set(err_mat_sortIdx(1:ncands))"
             lf_data.Rd_set_err_mat_sortVal.resize(lf_data.Rd_set_err_mat_sortIdx.size());
 
             for (size_t i = 0; i < ncands; i++)
@@ -897,16 +930,19 @@ int main(int argc, char *argv[]) {
                 lf_data.Rd_n(n, i) = lf_data.Rd_set_err_mat_sortVal(i);
             }
 
+
             // exh_err_n=err_mat_sort(1:ncands);
             lf_data.exh_err_n = lf_data.err_mat_sort.subvector(1, ncands);
 
+            // cost(n,1:ncands) = exh_err_n(:)';
             for (size_t i = 0; i < ncands; i++)
             {
                 lf_data.cost(n, i) = lf_data.exh_err_n(i);
             }
 
-            //        Find optimum Rd value (dynamic programming)
+/******************************** Find optimum Rd value (dynamic programming) ****************************************/
             if (n > 1) {
+
                 gsl::matrix costm(ncands, ncands); // transition cost matrix: rows (previous), cols (current)
                 costm.set_all(0); // Initialize costm to all zeros
 
@@ -916,6 +952,7 @@ int main(int argc, char *argv[]) {
 
                     lf_cont(lf_data.F0_cur, params.fs, lf_data.Ra_try, lf_data.Rk_try, lf_data.Rg_try, lf_data.EE(n), lf_data.LFpulse_cur);
 
+
                     for (int p = 0; p < ncands; ++p) {
 
                         // Transitions FROM states in previous frame
@@ -923,7 +960,10 @@ int main(int argc, char *argv[]) {
 
                         Rd2R(lf_data.Rd_n(n-1,p), lf_data.EE(n), lf_data.F0_cur, lf_data.Ra_prev, lf_data.Rk_prev, lf_data.Rg_prev);
 
+
+
                         // LFpulse_prev = lf_cont(F0_cur,fs,Ra_prev,Rk_prev,Rg_prev,EE(n));
+                        // Todo In here the lf_data.LFpulse_prev is generated not correct
                         lf_cont(lf_data.F0_cur, params.fs, lf_data.Ra_prev, lf_data.Rk_prev, lf_data.Rg_cur, lf_data.EE(n), lf_data.LFpulse_prev);
 
 
@@ -934,6 +974,8 @@ int main(int argc, char *argv[]) {
                             double cor_val = cor_cur(0, 1);
                             costm(p, c) = (1 - std::abs(cor_val)) * trans_wgt; // transition cost
                         }
+
+
 
                         //           costm=costm+repmat(cost(n-1,1:ncands)',1,ncands);  % add in cumulative costs
                         //           [costi,previ]=min(costm,[],1);
@@ -958,6 +1000,7 @@ int main(int argc, char *argv[]) {
                             previ[j] = idx;
                             lf_data.cost(n, j) += costi[previ[j]];
                         }
+                        std::cout << "costm" << costm << std::endl;
 
                         // Update prev matrix
                         for (int j = 0; j < ncands; j++) {
@@ -1019,8 +1062,9 @@ int main(int argc, char *argv[]) {
 //    }
 
     /* Finish */
-    std::cout << "Finished analysis." << std::endl << std::endl;
-    std::cout << "Rd_opt params"<< lf_data.Rd_opt << std::endl;
+//    std::cout << "Finished analysis." << std::endl << std::endl;
+//    std::cout << "Rd_opt params"<< lf_data.Rd_opt << std::endl;
+
 
 
 

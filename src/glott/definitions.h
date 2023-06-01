@@ -243,8 +243,8 @@ public:
     gsl::vector err_mat;
     gsl::vector err_mat_sort;
     gsl::vector err_mat_time;
-    gsl::vector err_mat_sortIdx;
-    gsl::vector Rd_set_err_mat_sortIdx;
+    gsl::vector_int err_mat_sortIdx;
+    gsl::vector_int Rd_set_err_mat_sortIdx;
     gsl::vector Rd_set_err_mat_sortVal;
 
     gsl::vector pulse;
