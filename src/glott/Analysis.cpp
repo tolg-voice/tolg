@@ -663,6 +663,7 @@ int main(int argc, char *argv[]) {
     // start to do the Rd param extraction
     // declare the struct variable
     LfData lf_data;
+/******************************** Initial settings *********************************************************************/
 
     // Dynamic programming weights
     double time_wgt = 0.1;
@@ -709,7 +710,7 @@ int main(int argc, char *argv[]) {
     lf_data.prev = gsl::matrix(nframe, ncands);
 
 
-    // Do processing - exhaustive search and dynamic programming
+/******************************** Do processing - exhaustive search and dynamic programming ***************************/
 
     // for n=1:length(GCI)
     for (int n = 0; n < data.gci_inds.size(); ++n) {
@@ -1000,7 +1001,7 @@ int main(int argc, char *argv[]) {
                             previ[j] = idx;
                             lf_data.cost(n, j) += costi[previ[j]];
                         }
-                        std::cout << "costm" << costm << std::endl;
+
 
                         // Update prev matrix
                         for (int j = 0; j < ncands; j++) {
@@ -1012,12 +1013,11 @@ int main(int argc, char *argv[]) {
 
 
         // gsl::vector_int idx_values(n);  // Declare a gsl::vector_int to store the idx values
-
-        lf_data.best.resize(n);  // Declare a gsl::vector_int to store the idx values
+/************************************** Do traceback ******************************************************************/
+        //        best=zeros(n,1);
+        //        [~,best(n)]=min(cost(n,1:ncands));
+        lf_data.best.resize(n+1);  // Declare a gsl::vector_int to store the idx values
         lf_data.best.set_zero(); // Declare a gsl::vector_int to store the idx values
-
-        // Do traceback
-        // lf_data.best.resize(n);
 
         for (size_t i = 0; i < n; ++i) {
             // Find the index of the minimum value in the subset of cost matrix
@@ -1034,21 +1034,27 @@ int main(int argc, char *argv[]) {
             lf_data.best(i) = static_cast<int>(idx);  // Store the idx value in the gsl::vector_int
         }
 
+        //        for i=n:-1:2
+        //          best(i-1)=prev(i,best(i));
+        //        end
+
 
         for (int i = n; i >= 2; i--) {
             lf_data.best(i - 2) = lf_data.prev(i, lf_data.best(i - 1));
         }
     }
 
+
+    //    Rd_opt=zeros(1,nframe);
     lf_data.Rd_opt.resize(nframe);
     lf_data.Rd_opt.set_zero(); // Declare a gsl::vector_int to store the idx values
 
 
-    for (int n = 0; n < nframe-3; n++) {
-
+    //    for n=1:nframe
+    //    Rd_opt(n) = Rd_n(n,best(n));
+    //    end
+    for (int n = 0; n < nframe; n++) {
         lf_data.Rd_opt[n] = lf_data.Rd_n(n, lf_data.best[n]);
-//            std::cout <<   lf_data.Rd_opt[n] << std::endl;
-
     }
 
 
@@ -1056,18 +1062,17 @@ int main(int argc, char *argv[]) {
 
     smooth(lf_data.Rd_opt, 5);
 
-    // Scale by 0.5
-//    for (size_t i = 0; i < lf_data.Rd_opt.size(); i++) {
-//        lf_data.Rd_opt[i] *= 0.5;
-//    }
+
+    //    Rd_opt = smooth(medfilt1(Rd_opt,11),5)*.5;
+    for (size_t i = 0; i < lf_data.Rd_opt.size(); i++) {
+        lf_data.Rd_opt[i] *= 0.5;
+    }
+
+    std::cout << lf_data.Rd_opt << std::endl;
 
     /* Finish */
-//    std::cout << "Finished analysis." << std::endl << std::endl;
-//    std::cout << "Rd_opt params"<< lf_data.Rd_opt << std::endl;
-
-
-
-
+    //    std::cout << "Finished analysis." << std::endl << std::endl;
+    //    std::cout << "Rd_opt params"<< lf_data.Rd_opt << std::endl;
 
     return EXIT_SUCCESS;
 
