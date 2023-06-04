@@ -208,125 +208,6 @@ void Rd2R(double Rd, double EE, double F0, double& Ra, double& Rk, double& Rg) {
     Rg = EI / (F0 * UP * M_PI);
 }
 
-
-//gsl::vector lf_cont(double F0, double fs, double Ra, double Rk, double Rg, double EE) {
-//    double F0min = 20;
-//    double F0max = 500;
-//
-//    // Set LF model parameters
-//    double T0 = 1 / F0;
-//    double Ta = Ra * T0;
-//    double Te = ((1 + Rk) / (2 * Rg)) * T0;
-//    double Tp = Te / (Rk + 1);
-//    double Tb = ((1 - (Rk + 1) / (2 * Rg)) * 1 / F0);
-//    double Tc = Tb + Te;
-//
-//    if (F0 < F0min || F0 > F0max) {
-//        return gsl::vector(); // Return empty vector for invalid F0
-//    } else {
-//        // Solve area balance using Newton-Raphson method
-//        double alpha, epsi;
-//
-//        lfSource(alpha, epsi, Tc, fs, Tp, Te, Ta, EE);
-//
-//        double omega = M_PI / Tp;
-//        double E0 = -(std::abs(EE)) / (std::exp(alpha * Te) * std::sin(omega * Te));
-//
-//        // Generate open phase and closed phase and combine
-//        double dt = 1 / fs;
-//
-//        size_t T1_size = static_cast<size_t>(std::round(Te / dt));
-//
-//        size_t T2_size = static_cast<size_t>(std::round((Tc - Te) / dt));
-//
-//        gsl::vector T1(T1_size);
-//        gsl::vector T2(T2_size);
-//
-//        for (size_t i = 0; i < T1_size; i++) {
-//            double t = dt * i;
-//            T1[i] = E0 * std::exp(alpha * t) * std::sin(omega * t);
-//        }
-////Todo
-//
-//        for (size_t i = 0; i < T2_size; i++) {
-//            double t = (T1_size * dt) + dt * i;
-//            T2[i] = (-EE / (epsi * Ta)) * (std::exp(-epsi * (t - Te)) - std::exp(-epsi * Tb));
-//        }
-//
-//        gsl::vector g_LF(T1_size + T2_size);
-//        for (size_t i = 0; i < T1_size; i++) {
-//            g_LF[i] = T1[i];
-//        }
-//        for (size_t i = 0; i < T2_size; i++) {
-//            g_LF[T1_size + i] = T2[i];
-//        }
-//
-//
-//        return g_LF;
-//
-//    }
-//}
-
-//
-//gsl::vector lf_cont(double F0, double fs, double Ra, double Rk, double Rg, double EE) {
-//    const double F0min = 20.0;
-//    const double F0max = 500.0;
-//
-//    // Set LF model parameters
-//    double T0 = 1.0 / F0;
-//    double Ta = Ra * T0;
-//    double Te = ((1.0 + Rk) / (2.0 * Rg)) * T0;
-//    double Tp = Te / (Rk + 1.0);
-//    double Tb = ((1.0 - (Rk + 1.0) / (2.0 * Rg)) * 1.0 / F0);
-//    double Tc = Tb + Te;
-//
-//    if (F0 < F0min || F0 > F0max) {
-//        return 0; // Return empty vector for invalid F0
-//        // THIS IS THE ERROR SIDE!
-//    } else {
-//        // Solve area balance using Newton-Raphson method
-//        double alpha, epsi;
-//
-//        lfSource(alpha, epsi, Tc, fs, Tp, Te, Ta, EE);
-//
-//        double omega = M_PI / Tp;
-//        double E0 = -(std::abs(EE)) / (std::exp(alpha * Te) * std::sin(omega * Te));
-//
-//        // Generate open phase and closed phase and combine
-//        double dt = 1.0 / fs;
-//
-//        size_t T1_size = static_cast<size_t>(std::round(Te / dt));
-//        size_t T2_size = static_cast<size_t>(std::round((Tc - Te) / dt));
-//
-//        // Ensure T1_size and T2_size are positive
-//        T1_size = std::max(T1_size, static_cast<size_t>(1));
-//        T2_size = std::max(T2_size, static_cast<size_t>(1));
-//
-//        gsl::vector T1(T1_size);
-//        gsl::vector T2(T2_size);
-//
-//        for (size_t i = 0; i < T1_size; i++) {
-//            double t = dt * i;
-//            T1[i] = E0 * std::exp(alpha * t) * std::sin(omega * t);
-//        }
-//
-//        for (size_t i = 0; i < T2_size; i++) {
-//            double t = (T1_size * dt) + dt * i;
-//            T2[i] = (-EE / (epsi * Ta)) * (std::exp(-epsi * (t - Te)) - std::exp(-epsi * Tb));
-//        }
-//
-//        gsl::vector g_LF(T1_size + T2_size);
-//        for (size_t i = 0; i < T1_size; i++) {
-//            g_LF[i] = T1[i];
-//        }
-//        for (size_t i = 0; i < T2_size; i++) {
-//            g_LF[T1_size + i] = T2[i];
-//        }
-//
-//        return g_LF;
-//    }
-//}
-//
 void lf_cont(double F0, double fs, double Ra, double Rk, double Rg, double EE, gsl::vector& g_LF) {
     const double F0min = 20.0;
     const double F0max = 500.0;
@@ -434,31 +315,9 @@ gsl::vector makePulseCentGCI(const gsl::vector pulse, int winLen, int start, int
 
 
 
-
-//double computeCorrelation(const gsl::vector& vector1, const gsl::vector& vector2) {
-//    size_t size = vector1.size();
-//    double mean1 = gsl_stats_mean(&vector1[0], 1, size);
-//    double mean2 = gsl_stats_mean(&vector2[0], 1, size);
-//    double stdDev1 = gsl_stats_sd(&vector1[0], 1, size);
-//    double stdDev2 = gsl_stats_sd(&vector2[0], 1, size);
-//
-//    double correlation = 0.0;
-//    for (size_t i = 0; i < size; ++i) {
-//        double deviation1 = vector1[i] - mean1;
-//        double deviation2 = vector2[i] - mean2;
-//        correlation += (deviation1 / stdDev1) * (deviation2 / stdDev2);
-//    }
-//    correlation /= size;
-//
-//    return correlation;
-//}
-//
-//
-
-
 // todo ??? Is ths Correspond?
 
-double computeCorrelation(const gsl::vector& X, const gsl::vector& Y)
+double computeCorrelation(const gsl::vector X, const gsl::vector Y)
 {
     double sum_X = 0.0, sum_Y = 0.0, sum_XY = 0.0;
     double squareSum_X = 0.0, squareSum_Y = 0.0;
@@ -709,7 +568,6 @@ int main(int argc, char *argv[]) {
     // prev=zeros(nframe,ncands);      % traceback pointer
     lf_data.prev = gsl::matrix(nframe, ncands);
 
-
 /******************************** Do processing - exhaustive search and dynamic programming ***************************/
 
     // for n=1:length(GCI)
@@ -775,21 +633,26 @@ int main(int argc, char *argv[]) {
         //        glot_seg_spec=20*log10(abs(fft(glot_seg)));
 
 
-        size_t fft_len = lf_data.glot_seg.size();
-        ComplexVector glot_seg_spec(fft_len);
-        // Perform FFT on glot_seg
-        FFTRadix2(lf_data.glot_seg, fft_len, &glot_seg_spec);
+        //        size_t fft_len = lf_data.glot_seg.size();
+        //        ComplexVector glot_seg_spec(fft_len);
+        //        // Perform FFT on glot_seg
+        //        FFTRadix2(lf_data.glot_seg, fft_len, &glot_seg_spec);
+        //
+        //        lf_data.glot_seg_spec = glot_seg_spec.getAbs();
+        //
+        //        for (size_t i = 0; i < lf_data.glot_seg_spec.size(); i++) {
+        //            lf_data.glot_seg_spec(i) = 20 * log10(lf_data.glot_seg_spec(i));
+        //        }
+
+        //  glot_seg_spec=20*log10(abs(fft(glot_seg)));
+        ComplexVector glot_seg_spec;
+        FFTRadix2(lf_data.glot_seg, &glot_seg_spec);
 
         lf_data.glot_seg_spec = glot_seg_spec.getAbs();
-
         for (size_t i = 0; i < lf_data.glot_seg_spec.size(); i++) {
             lf_data.glot_seg_spec(i) = 20 * log10(lf_data.glot_seg_spec(i));
         }
 
-//        ComplexVector temp_spec;
-//        FFTRadix2(lf_data.glot_seg,&temp_spec);
-//
-//        gsl::vector temp = temp_spec.getAbs();
 
         //   freq=linspace(0,fs,length(glot_seg));
         lf_data.freq.resize(lf_data.glot_seg.size());
@@ -824,6 +687,7 @@ int main(int argc, char *argv[]) {
             //         [Ra_cur,Rk_cur,Rg_cur] = Rd2R(Rd_set(m),EE(n),F0_cur);
             Rd2R(lf_data.Rd_set(m), lf_data.EE(n), lf_data.F0_cur, lf_data.Ra_cur, lf_data.Rk_cur, lf_data.Rg_cur);
 
+
             //          pulse = lf_cont(F0_cur,fs,Ra_cur,Rk_cur,Rg_cur,EE(n));
             lf_cont(lf_data.F0_cur, params.fs, lf_data.Ra_cur, lf_data.Rk_cur, lf_data.Rg_cur, lf_data.EE(n), lf_data.pulse);
 
@@ -835,41 +699,41 @@ int main(int argc, char *argv[]) {
 
 
             //  glot_seg_spec=20*log10(abs(fft(glot_seg)));
-            //  the glot_seg_spec is shorter than in Matlab
-            size_t fft_len = lf_data.LFgroup.size() ;
+            ComplexVector LFgroup_win_spec;
+            FFTRadix2(lf_data.LFgroup, &LFgroup_win_spec);
 
-            ComplexVector LFgroup_win_spec(fft_len);
-            // Perform FFT on glot_seg
-//                FFTRadix2(lf_data.LFgroup, fft_len, &LFgroup_win_spec);
-            FFTRadix2(lf_data.LFgroup, fft_len, &LFgroup_win_spec);
             lf_data.LFgroup_win_spec = LFgroup_win_spec.getAbs();
-
+            // Print the values of temp
             for (size_t i = 0; i < lf_data.LFgroup_win_spec.size(); i++) {
                 lf_data.LFgroup_win_spec(i) = 20 * log10(lf_data.LFgroup_win_spec(i));
             }
 
+
 /******************************** Time domain error function **********************************************************/
-//                    cor_time = corrcoef(glot_seg,LFgroup_win);
-//                    cor_time=abs(cor_time(2));
-//                    err_time=1-cor_time;
-//                    err_mat_time(m)=err_time;
+        //                    cor_time = corrcoef(glot_seg,LFgroup_win);
+        //                    cor_time=abs(cor_time(2));
+        //                    err_time=1-cor_time;
+        //                    err_mat_time(m)=err_time;
 
 
             lf_data.cor_time = computeCorrelation(lf_data.glot_seg, lf_data.LFgroup_win);
+
             lf_data.cor_time = std::abs(lf_data.cor_time);
             lf_data.err_time = 1 - lf_data.cor_time;
             lf_data.err_mat_time[m] = lf_data.err_time;
 
 
 
+
 /******************************* Frequency domain error function ******************************************************/
-//            % Frequency domain error function
-//            cor_freq = corrcoef(glot_seg_spec(freq<MVF),LFgroup_win_spec(freq<MVF));
-//            cor_freq=abs(cor_freq(2));
-//            err_freq=1-cor_freq;
+        //            % Frequency domain error function
+        //            cor_freq = corrcoef(glot_seg_spec(freq<MVF),LFgroup_win_spec(freq<MVF));
+        //            cor_freq=abs(cor_freq(2));
+        //            err_freq=1-cor_freq;
 
 
             lf_data.cor_freq = computeCorrelation(lf_data.glot_seg_spec, lf_data.LFgroup_win_spec);
+
             lf_data.cor_freq = std::abs(lf_data.cor_freq);
             lf_data.err_freq = 1 - lf_data.cor_freq;
 
@@ -880,7 +744,10 @@ int main(int argc, char *argv[]) {
 
             lf_data.err_mat[m] = (lf_data.err_time * time_wgt) + (lf_data.err_freq * freq_wgt);
 
+
         }
+
+
 /******************************** Find best ncands (local costs and Rd values) ****************************************/
 //          [err_mat_sort,err_mat_sortIdx]=sort(err_mat);
 //          Rd_n(n,1:ncands)=Rd_set(err_mat_sortIdx(1:ncands));
@@ -929,11 +796,15 @@ int main(int argc, char *argv[]) {
                 int index = lf_data.Rd_set_err_mat_sortIdx[i];
                 lf_data.Rd_set_err_mat_sortVal(i) = lf_data.Rd_set[index];
                 lf_data.Rd_n(n, i) = lf_data.Rd_set_err_mat_sortVal(i);
+
             }
+
+
 
 
             // exh_err_n=err_mat_sort(1:ncands);
             lf_data.exh_err_n = lf_data.err_mat_sort.subvector(1, ncands);
+
 
             // cost(n,1:ncands) = exh_err_n(:)';
             for (size_t i = 0; i < ncands; i++)
@@ -953,6 +824,7 @@ int main(int argc, char *argv[]) {
 
                     lf_cont(lf_data.F0_cur, params.fs, lf_data.Ra_try, lf_data.Rk_try, lf_data.Rg_try, lf_data.EE(n), lf_data.LFpulse_cur);
 
+                    std::cout << "******************************" << lf_data.LFpulse_cur << std::endl;
 
                     for (int p = 0; p < ncands; ++p) {
 
@@ -961,10 +833,7 @@ int main(int argc, char *argv[]) {
 
                         Rd2R(lf_data.Rd_n(n-1,p), lf_data.EE(n), lf_data.F0_cur, lf_data.Ra_prev, lf_data.Rk_prev, lf_data.Rg_prev);
 
-
-
                         // LFpulse_prev = lf_cont(F0_cur,fs,Ra_prev,Rk_prev,Rg_prev,EE(n));
-                        // Todo In here the lf_data.LFpulse_prev is generated not correct
                         lf_cont(lf_data.F0_cur, params.fs, lf_data.Ra_prev, lf_data.Rk_prev, lf_data.Rg_cur, lf_data.EE(n), lf_data.LFpulse_prev);
 
 
@@ -982,6 +851,7 @@ int main(int argc, char *argv[]) {
                         //           [costi,previ]=min(costm,[],1);
                         //           cost(n,1:ncands)=cost(n,1:ncands)+costi;
                         //           prev(n,1:ncands)=previ;
+
                         std::vector<double> costi(ncands);
                         std::vector<int> previ(ncands);
 
@@ -1058,6 +928,7 @@ int main(int argc, char *argv[]) {
     }
 
 
+
     medfilt1(lf_data.Rd_opt, 11);
 
     smooth(lf_data.Rd_opt, 5);
@@ -1068,7 +939,8 @@ int main(int argc, char *argv[]) {
         lf_data.Rd_opt[i] *= 0.5;
     }
 
-    std::cout << lf_data.Rd_opt << std::endl;
+
+//    std::cout << "Rd_opt params"<< lf_data.Rd_opt << std::endl;
 
     /* Finish */
     //    std::cout << "Finished analysis." << std::endl << std::endl;

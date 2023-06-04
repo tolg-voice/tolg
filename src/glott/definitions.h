@@ -256,6 +256,7 @@ public:
     gsl::vector_int best;
     gsl::vector Rd_opt;
 
+    gsl::vector temp;
 
     gsl::vector exh_err_n;
     gsl::vector LFpulse_cur;
