@@ -688,6 +688,8 @@ int main(int argc, char *argv[]) {
             Rd2R(lf_data.Rd_set(m), lf_data.EE(n), lf_data.F0_cur, lf_data.Ra_cur, lf_data.Rk_cur, lf_data.Rg_cur);
 
 
+
+
             //          pulse = lf_cont(F0_cur,fs,Ra_cur,Rk_cur,Rg_cur,EE(n));
             lf_cont(lf_data.F0_cur, params.fs, lf_data.Ra_cur, lf_data.Rk_cur, lf_data.Rg_cur, lf_data.EE(n), lf_data.pulse);
 
@@ -802,6 +804,8 @@ int main(int argc, char *argv[]) {
 
 
 
+
+
             // exh_err_n=err_mat_sort(1:ncands);
             lf_data.exh_err_n = lf_data.err_mat_sort.subvector(1, ncands);
 
@@ -811,6 +815,8 @@ int main(int argc, char *argv[]) {
             {
                 lf_data.cost(n, i) = lf_data.exh_err_n(i);
             }
+
+
 
 /******************************** Find optimum Rd value (dynamic programming) ****************************************/
             if (n > 1) {
@@ -822,9 +828,9 @@ int main(int argc, char *argv[]) {
                     // Transitions TO states in current frame
                     Rd2R(lf_data.Rd_n(n, c), lf_data.EE(n), lf_data.F0_cur, lf_data.Ra_try, lf_data.Rk_try, lf_data.Rg_try);
 
+
                     lf_cont(lf_data.F0_cur, params.fs, lf_data.Ra_try, lf_data.Rk_try, lf_data.Rg_try, lf_data.EE(n), lf_data.LFpulse_cur);
 
-                    std::cout << "******************************" << lf_data.LFpulse_cur << std::endl;
 
                     for (int p = 0; p < ncands; ++p) {
 
@@ -840,9 +846,8 @@ int main(int argc, char *argv[]) {
                         if (std::isnan( lf_data.LFpulse_cur(0)) || std::isnan( lf_data.LFpulse_prev(0))) {
                             costm(p, c) = 0;
                         } else {
-                            gsl::matrix cor_cur = computeCorrelationMatrix( lf_data.LFpulse_cur,  lf_data.LFpulse_prev);
-                            double cor_val = cor_cur(0, 1);
-                            costm(p, c) = (1 - std::abs(cor_val)) * trans_wgt; // transition cost
+                            double cor_cur = computeCorrelation( lf_data.LFpulse_cur,  lf_data.LFpulse_prev);
+                            costm(p, c) = (1 - std::abs(cor_cur)) * trans_wgt; // transition cost
                         }
 
 
@@ -912,6 +917,7 @@ int main(int argc, char *argv[]) {
         for (int i = n; i >= 2; i--) {
             lf_data.best(i - 2) = lf_data.prev(i, lf_data.best(i - 1));
         }
+
     }
 
 
@@ -940,11 +946,10 @@ int main(int argc, char *argv[]) {
     }
 
 
-//    std::cout << "Rd_opt params"<< lf_data.Rd_opt << std::endl;
 
     /* Finish */
-    //    std::cout << "Finished analysis." << std::endl << std::endl;
-    //    std::cout << "Rd_opt params"<< lf_data.Rd_opt << std::endl;
+    //    std::cout << "*********************Finished analysis.*********************" << std::endl << std::endl;
+    //    std::cout << "*********************Rd_opt params*********************"<< lf_data.Rd_opt << std::endl;
 
     return EXIT_SUCCESS;
 
