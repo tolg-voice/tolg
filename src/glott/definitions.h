@@ -87,7 +87,7 @@ struct Param
 	bool extract_hnr;
 	bool extract_infofile;
 	bool extract_glottal_excitation;
-    bool extract_dev_glottal_excitation;
+    bool extract_rd;
     bool extract_original_signal;
 	bool extract_gci_signal;
 	bool extract_pulses_as_features;
@@ -150,7 +150,7 @@ struct Param
 	std::string extension_syn;
 	std::string extension_wav;
     std::string extension_gci = ".gci";
-    std::string extension_dev_src = ".dev_src.wav";
+    std::string extension_rd = ".rd";
     std::string wav_filename;
 	std::string default_config_filename;
 	std::string user_config_filename;
@@ -179,6 +179,7 @@ public:
 	gsl::matrix excitation_pulses;
    gsl::matrix hnr_glot;
 
+    gsl::vector Rd_opt;
 
 	/* QMF analysis specific */
 	//gsl::matrix lsf_vt_qmf1;

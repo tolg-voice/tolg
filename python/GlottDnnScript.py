@@ -37,6 +37,7 @@ def write_dnn_infofile():
     f.write('\"L\", \"L\"')
     f.write('];\n')    
     # write feature orders 
+    # noinspection PyInterpreter
     f.write('F0_ORDER = ' + str(conf.input_dims[0]) + ';\n')
     f.write('GAIN_ORDER = ' + str(conf.input_dims[1]) + ';\n')
     f.write('HNR_ORDER = ' + str(conf.input_dims[2]) + ';\n')
@@ -55,6 +56,7 @@ def make_directories():
     dirs = ['wav',
             'raw',
             'gci',
+            'rd',
             'scp',
             'exc',
             'syn',

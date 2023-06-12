@@ -1099,9 +1099,6 @@ void lfSource(double &alpha, double &epsi, double Tc, double fs, double Tp, doub
 }
 
 
-/*******************************************************************/
-/*                          MAIN                                   */
-/*******************************************************************/
 void Rd2R(double Rd, double EE, double F0, double& Ra, double& Rk, double& Rg) {
     Ra = (-1 + (4.8 * Rd)) / 100;
     Rk = (22.4 + (11.8 * Rd)) / 100;
@@ -1830,7 +1827,8 @@ double GetRd(const Param &params, const gsl::vector &source_signal,
 
         }
 
-        std::cout << "********************* Rd_opt params *********************" << lf_data.Rd_opt << std::endl;
+        Rd_opt->copy(lf_data.Rd_opt);
+        std::cout << "********************* Rd_opt params *********************" << Rd_opt << std::endl;
     std::cout << " done." << std::endl;
     return EXIT_SUCCESS;
 }

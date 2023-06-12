@@ -219,8 +219,8 @@ int AssignConfigParams(const libconfig::Config &cfg, const bool required,
 
     ConfigLookupBool("EXTRACT_GLOTTAL_EXCITATION", cfg, required,
                      &(params->extract_glottal_excitation));
-      ConfigLookupBool("EXTRACT_DEV_GLOTTAL_EXCITATION", cfg, required,
-                       &(params->extract_dev_glottal_excitation));
+      ConfigLookupBool("extract_rd", cfg, required,
+                       &(params->extract_rd));
 
     ConfigLookupBool("EXTRACT_ORIGINAL_SIGNAL", cfg, false,
                      &(params->extract_original_signal));

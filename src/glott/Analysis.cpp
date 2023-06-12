@@ -517,8 +517,8 @@ int main(int argc, char *argv[]) {
     // start to do the Rd param extraction
     // declare the struct variable
     //
-    LfData lf_data;
-   GetRd(params, data.source_signal, data.gci_inds, &(lf_data.Rd_opt));
+//    LfData lf_data;
+   GetRd(params, data.source_signal, data.gci_inds, &(data.Rd_opt));
 
 
 
@@ -527,7 +527,7 @@ int main(int argc, char *argv[]) {
    data.SaveData(params);
 
 
-///******************************** Initial settings *********************************************************************/
+/******************************** Initial settings *********************************************************************/
 //
 //    // Dynamic programming weights
 //    double time_wgt = 0.1;

@@ -69,7 +69,7 @@ Param::Param() {
 	extract_hnr = true;
 	extract_infofile = false;
 	extract_glottal_excitation = true;
-    extract_dev_glottal_excitation = true;
+    extract_rd = true;
 	extract_gci_signal = true;
 	extract_original_signal = false;
 	extract_pulses_as_features = false;
@@ -207,17 +207,18 @@ int AnalysisData::SaveData(const Param &params) {
     }
 
 
-//    if (params.extract_dev_glottal_excitation) {
+//    if (params.extract_rd) {
 //        filename = GetParamPath("exc", params.extension_dev_src, params.dir_exc, params);
 //        if(WriteWavFile(filename, source_signal, params.fs) == EXIT_FAILURE)
 //            return EXIT_FAILURE;
 //    }
 // Save source_dev_signal to file
-    if (params.extract_dev_glottal_excitation) {
+    if (params.extract_rd) {
         // Write derivative of source signal to file with extension ".dev_src"
-        filename = GetParamPath("exc", params.extension_dev_src, params.dir_exc, params);
+        filename = GetParamPath("rd", params.extension_rd, params.dir_exc, params);
         if(WriteWavFile(filename, source_dev_signal, params.fs) == EXIT_FAILURE)
             return EXIT_FAILURE;
+
     }
 
 
