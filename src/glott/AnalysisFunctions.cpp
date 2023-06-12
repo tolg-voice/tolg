@@ -185,7 +185,7 @@ int GetGci(const Param &params, const gsl::vector &signal, const gsl::vector &so
       gsl::vector mean_based_signal(signal.size(),true);
 
       MeanBasedSignal(signal, params.fs, getMeanF0(fundf), &mean_based_signal);
-//      MovingAverageFilter(3,&mean_based_signal); // remove small fluctuation
+      MovingAverageFilter(3,&mean_based_signal); // remove small fluctuation
 
       SedreamsGciDetection(source_signal_iaif,mean_based_signal,gci_inds);
 

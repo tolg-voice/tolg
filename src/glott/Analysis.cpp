@@ -315,8 +315,6 @@ gsl::vector makePulseCentGCI(const gsl::vector pulse, int winLen, int start, int
 
 
 
-// todo ??? Is ths Correspond?
-
 double computeCorrelation(const gsl::vector X, const gsl::vector Y)
 {
     double sum_X = 0.0, sum_Y = 0.0, sum_XY = 0.0;
@@ -569,10 +567,10 @@ int main(int argc, char *argv[]) {
     lf_data.prev = gsl::matrix(nframe, ncands);
 
 /******************************** Do processing - exhaustive search and dynamic programming ***************************/
-
     // for n=1:length(GCI)
     for (int n = 0; n < data.gci_inds.size(); ++n) {
         double pulseLen;
+/************************************ get framing information *********************************************************/
 
         if (n == 0)
         {
@@ -645,6 +643,7 @@ int main(int argc, char *argv[]) {
         //        }
 
         //  glot_seg_spec=20*log10(abs(fft(glot_seg)));
+
         ComplexVector glot_seg_spec;
         FFTRadix2(lf_data.glot_seg, &glot_seg_spec);
 
@@ -682,12 +681,12 @@ int main(int argc, char *argv[]) {
         lf_data.EE(n) = abs_min_value;
 
 
+/****************************************** exhaustive search *********************************************************/
+
         // for m=1:length(Rd_set)
         for (int m = 0; m < lf_data.Rd_set.size(); ++m) {
             //         [Ra_cur,Rk_cur,Rg_cur] = Rd2R(Rd_set(m),EE(n),F0_cur);
             Rd2R(lf_data.Rd_set(m), lf_data.EE(n), lf_data.F0_cur, lf_data.Ra_cur, lf_data.Rk_cur, lf_data.Rg_cur);
-
-
 
 
             //          pulse = lf_cont(F0_cur,fs,Ra_cur,Rk_cur,Rg_cur,EE(n));
@@ -705,8 +704,8 @@ int main(int argc, char *argv[]) {
             FFTRadix2(lf_data.LFgroup, &LFgroup_win_spec);
 
             lf_data.LFgroup_win_spec = LFgroup_win_spec.getAbs();
-            // Print the values of temp
-            for (size_t i = 0; i < lf_data.LFgroup_win_spec.size(); i++) {
+            // Print the values of temp`
+            for (size_t i = 0; i < lf_data.LFgroup.size(); i++) {
                 lf_data.LFgroup_win_spec(i) = 20 * log10(lf_data.LFgroup_win_spec(i));
             }
 
@@ -735,7 +734,6 @@ int main(int argc, char *argv[]) {
 
 
             lf_data.cor_freq = computeCorrelation(lf_data.glot_seg_spec, lf_data.LFgroup_win_spec);
-
             lf_data.cor_freq = std::abs(lf_data.cor_freq);
             lf_data.err_freq = 1 - lf_data.cor_freq;
 
@@ -804,8 +802,6 @@ int main(int argc, char *argv[]) {
 
 
 
-
-
             // exh_err_n=err_mat_sort(1:ncands);
             lf_data.exh_err_n = lf_data.err_mat_sort.subvector(1, ncands);
 
@@ -825,6 +821,9 @@ int main(int argc, char *argv[]) {
                 costm.set_all(0); // Initialize costm to all zeros
 
                 for (int c = 0; c < ncands; ++c) {
+
+/***************************************　Transitions TO states in current frame　**************************************/
+
                     // Transitions TO states in current frame
                     Rd2R(lf_data.Rd_n(n, c), lf_data.EE(n), lf_data.F0_cur, lf_data.Ra_try, lf_data.Rk_try, lf_data.Rg_try);
 
@@ -849,7 +848,6 @@ int main(int argc, char *argv[]) {
                             double cor_cur = computeCorrelation( lf_data.LFpulse_cur,  lf_data.LFpulse_prev);
                             costm(p, c) = (1 - std::abs(cor_cur)) * trans_wgt; // transition cost
                         }
-
 
 
                         //           costm=costm+repmat(cost(n-1,1:ncands)',1,ncands);  % add in cumulative costs
@@ -949,7 +947,10 @@ int main(int argc, char *argv[]) {
 
     /* Finish */
     //    std::cout << "*********************Finished analysis.*********************" << std::endl << std::endl;
-    //    std::cout << "*********************Rd_opt params*********************"<< lf_data.Rd_opt << std::endl;
+//    std::cout << "*********************EE params*********************" << data.gci_inds << std::endl;
+
+    std::cout << "********************* Rd_opt params *********************" << data.gci_inds << std::endl;
+
 
     return EXIT_SUCCESS;
 

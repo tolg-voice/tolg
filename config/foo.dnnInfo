@@ -1,2 +1,0 @@
-LAYERS =       [3, 3, 3];
-ACTIVATIONS = ["L", "S", "L"]; # S=Sigmoid, L=Linear

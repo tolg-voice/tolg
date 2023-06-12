@@ -118,7 +118,17 @@ wget -O "$DATADIR/$BASENAME.wav" $URL
 Now run GlottDNN Analysis program with default configuration
 ``` bash
 ./src/Analysis "$DATADIR/$BASENAME.wav" ./config/config_default_16k.cfg
+or
+./src/Analysis "$DATADIR/$BASENAME.wav" ./src/config_default_16k.cfg
+
 ```
+You can change the ```f0``` file by:
+```ssh
+x2x +fa slt_arctic_a0001.f0 > output.txt
+```
+
+
+
 
 We should now have the following files 
 
