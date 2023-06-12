@@ -225,7 +225,7 @@ void lf_cont(double F0, double fs, double Ra, double Rk, double Rg, double EE, g
 //        // For example, you can clear the input vector:
 //        g_LF.resize(0);
 //    } else {
-        // Solve area balance using Newton-Raphson method
+    // Solve area balance using Newton-Raphson method
     double alpha, epsi;
 
     lfSource(alpha, epsi, Tc, fs, Tp, Te, Ta, EE);
@@ -434,90 +434,90 @@ std::vector<double> smooth(const std::vector<double>& input, int windowSize) {
 
 int main(int argc, char *argv[]) {
 
-   if (CheckCommandLineAnalysis(argc) == EXIT_FAILURE) {
-      return EXIT_FAILURE;
-   }
+    if (CheckCommandLineAnalysis(argc) == EXIT_FAILURE) {
+        return EXIT_FAILURE;
+    }
 
-   const char *wav_filename = argv[1];
-   const char *default_config_filename = argv[2];
-   const char *user_config_filename = argv[3];
+    const char *wav_filename = argv[1];
+    const char *default_config_filename = argv[2];
+    const char *user_config_filename = argv[3];
 
-   /* Declare configuration parameter struct */
-   Param params;
+    /* Declare configuration parameter struct */
+    Param params;
 
-   /* Read configuration file */
-   if (ReadConfig(default_config_filename, true, &params) == EXIT_FAILURE)
-      return EXIT_FAILURE;
-   if (argc > 3) {
-      if (ReadConfig(user_config_filename, false, &params) == EXIT_FAILURE)
-         return EXIT_FAILURE;
-   }
+    /* Read configuration file */
+    if (ReadConfig(default_config_filename, true, &params) == EXIT_FAILURE)
+        return EXIT_FAILURE;
+    if (argc > 3) {
+        if (ReadConfig(user_config_filename, false, &params) == EXIT_FAILURE)
+            return EXIT_FAILURE;
+    }
 
-   /* Read sound file and allocate data */
-   AnalysisData data;
+    /* Read sound file and allocate data */
+    AnalysisData data;
 
-   if(ReadWavFile(wav_filename, &(data.signal), &params) == EXIT_FAILURE)
-      return EXIT_FAILURE;
+    if(ReadWavFile(wav_filename, &(data.signal), &params) == EXIT_FAILURE)
+        return EXIT_FAILURE;
 
-   data.AllocateData(params);
+    data.AllocateData(params);
 
-   /* High-pass filter signal to eliminate low frequency "rumble" */
-   HighPassFiltering(params, &(data.signal));
+    /* High-pass filter signal to eliminate low frequency "rumble" */
+    HighPassFiltering(params, &(data.signal));
 
-   if(!params.use_external_f0 || !params.use_external_gci || (params.signal_polarity == POLARITY_DETECT))
-      GetIaifResidual(params, data.signal, (&data.source_signal_iaif));
+    if(!params.use_external_f0 || !params.use_external_gci || (params.signal_polarity == POLARITY_DETECT))
+        GetIaifResidual(params, data.signal, (&data.source_signal_iaif));
 
-   /* Read or estimate signal polarity */
-   PolarityDetection(params, &(data.signal), &(data.source_signal_iaif));
+    /* Read or estimate signal polarity */
+    PolarityDetection(params, &(data.signal), &(data.source_signal_iaif));
 
-   /* Read or estimate fundamental frequency (F0)  */
-   if(GetF0(params, data.signal, data.source_signal_iaif, &(data.fundf)) == EXIT_FAILURE)
-      return EXIT_FAILURE;
+    /* Read or estimate fundamental frequency (F0)  */
+    if(GetF0(params, data.signal, data.source_signal_iaif, &(data.fundf)) == EXIT_FAILURE)
+        return EXIT_FAILURE;
 
-   /* Read or estimate glottal closure instants (GCIs)*/
-   if(GetGci(params, data.signal, data.source_signal_iaif, data.fundf, &(data.gci_inds)) == EXIT_FAILURE)
-      return EXIT_FAILURE;
+    /* Read or estimate glottal closure instants (GCIs)*/
+    if(GetGci(params, data.signal, data.source_signal_iaif, data.fundf, &(data.gci_inds)) == EXIT_FAILURE)
+        return EXIT_FAILURE;
 
-   /* Estimate frame log-energy (Gain) */
-   GetGain(params, data.fundf, data.signal, &(data.frame_energy));
+    /* Estimate frame log-energy (Gain) */
+    GetGain(params, data.fundf, data.signal, &(data.frame_energy));
 
-   /* Spectral analysis for vocal tract transfer function*/
-   if(params.qmf_subband_analysis) {
-      SpectralAnalysisQmf(params, data, &(data.poly_vocal_tract));
-   } else {
-      SpectralAnalysis(params, data, &(data.poly_vocal_tract));
-   }
+    /* Spectral analysis for vocal tract transfer function*/
+    if(params.qmf_subband_analysis) {
+        SpectralAnalysisQmf(params, data, &(data.poly_vocal_tract));
+    } else {
+        SpectralAnalysis(params, data, &(data.poly_vocal_tract));
+    }
 
-   /* Smooth vocal tract estimates in LSF domain */
-   Poly2Lsf(data.poly_vocal_tract, &data.lsf_vocal_tract);
-   MedianFilter(5, &data.lsf_vocal_tract);
-   MovingAverageFilter(3, &data.lsf_vocal_tract);
-   Lsf2Poly(data.lsf_vocal_tract, &data.poly_vocal_tract);
+    /* Smooth vocal tract estimates in LSF domain */
+    Poly2Lsf(data.poly_vocal_tract, &data.lsf_vocal_tract);
+    MedianFilter(5, &data.lsf_vocal_tract);
+    MovingAverageFilter(3, &data.lsf_vocal_tract);
+    Lsf2Poly(data.lsf_vocal_tract, &data.poly_vocal_tract);
 
-   /* Perform glottal inverse filtering with the estimated VT AR polynomials */
-   InverseFilter(params, data, &(data.poly_glot), &(data.source_signal));
+    /* Perform glottal inverse filtering with the estimated VT AR polynomials */
+    InverseFilter(params, data, &(data.poly_glot), &(data.source_signal));
 
-   /* Re-estimate GCIs on the residual */
-   //if(GetGci(params, data.signal, data.source_signal, data.fundf, &(data.gci_inds)) == EXIT_FAILURE)
-   //   return EXIT_FAILURE;
+    /* Re-estimate GCIs on the residual */
+    //if(GetGci(params, data.signal, data.source_signal, data.fundf, &(data.gci_inds)) == EXIT_FAILURE)
+    //   return EXIT_FAILURE;
 
-   /* Extract pitch synchronous (excitation) waveforms at each frame */
-   if (params.use_waveforms_directly) {
-      GetPulses(params, data.signal, data.gci_inds, data.fundf, &(data.excitation_pulses));
-   } else {
-      GetPulses(params, data.source_signal, data.gci_inds, data.fundf, &(data.excitation_pulses));
-   }
+    /* Extract pitch synchronous (excitation) waveforms at each frame */
+    if (params.use_waveforms_directly) {
+        GetPulses(params, data.signal, data.gci_inds, data.fundf, &(data.excitation_pulses));
+    } else {
+        GetPulses(params, data.source_signal, data.gci_inds, data.fundf, &(data.excitation_pulses));
+    }
 
-   HnrAnalysis(params, data.source_signal, data.fundf, &(data.hnr_glot));
+    HnrAnalysis(params, data.source_signal, data.fundf, &(data.hnr_glot));
 
-   /* Convert vocal tract AR polynomials to LSF */
-   Poly2Lsf(data.poly_vocal_tract, &(data.lsf_vocal_tract));
+    /* Convert vocal tract AR polynomials to LSF */
+    Poly2Lsf(data.poly_vocal_tract, &(data.lsf_vocal_tract));
 
-   /* Convert glottal source AR polynomials to LSF */
-   Poly2Lsf(data.poly_glot, &(data.lsf_glot));
+    /* Convert glottal source AR polynomials to LSF */
+    Poly2Lsf(data.poly_glot, &(data.lsf_glot));
 
-   /* Write analyzed features to files */
-   data.SaveData(params);
+    /* Write analyzed features to files */
+    data.SaveData(params);
 
     // start to do the Rd param extraction
     // declare the struct variable
@@ -712,10 +712,10 @@ int main(int argc, char *argv[]) {
 
 
 /******************************** Time domain error function **********************************************************/
-        //                    cor_time = corrcoef(glot_seg,LFgroup_win);
-        //                    cor_time=abs(cor_time(2));
-        //                    err_time=1-cor_time;
-        //                    err_mat_time(m)=err_time;
+            //                    cor_time = corrcoef(glot_seg,LFgroup_win);
+            //                    cor_time=abs(cor_time(2));
+            //                    err_time=1-cor_time;
+            //                    err_mat_time(m)=err_time;
 
 
             lf_data.cor_time = computeCorrelation(lf_data.glot_seg, lf_data.LFgroup_win);
@@ -728,10 +728,10 @@ int main(int argc, char *argv[]) {
 
 
 /******************************* Frequency domain error function ******************************************************/
-        //            % Frequency domain error function
-        //            cor_freq = corrcoef(glot_seg_spec(freq<MVF),LFgroup_win_spec(freq<MVF));
-        //            cor_freq=abs(cor_freq(2));
-        //            err_freq=1-cor_freq;
+            //            % Frequency domain error function
+            //            cor_freq = corrcoef(glot_seg_spec(freq<MVF),LFgroup_win_spec(freq<MVF));
+            //            cor_freq=abs(cor_freq(2));
+            //            err_freq=1-cor_freq;
 
 
             lf_data.cor_freq = computeCorrelation(lf_data.glot_seg_spec, lf_data.LFgroup_win_spec);
@@ -755,136 +755,136 @@ int main(int argc, char *argv[]) {
 //          Rd_n(n,1:ncands)=Rd_set(err_mat_sortIdx(1:ncands));
 
 
-            // Copy err_mat to a new vector for sorting
-            lf_data.err_mat_sort = lf_data.err_mat;
+        // Copy err_mat to a new vector for sorting
+        lf_data.err_mat_sort = lf_data.err_mat;
 
-            // Convert gsl vector "err_mat_sort_std" into std::vector & Sort std::vector in ascending order
-            std::vector<double> err_mat_sort_std(lf_data.err_mat_sort.size());
-            for (size_t i = 0; i < lf_data.err_mat_sort.size(); ++i) {
-                err_mat_sort_std[i] = lf_data.err_mat_sort[i];
-            }
-            std::sort(err_mat_sort_std.begin(), err_mat_sort_std.end());
+        // Convert gsl vector "err_mat_sort_std" into std::vector & Sort std::vector in ascending order
+        std::vector<double> err_mat_sort_std(lf_data.err_mat_sort.size());
+        for (size_t i = 0; i < lf_data.err_mat_sort.size(); ++i) {
+            err_mat_sort_std[i] = lf_data.err_mat_sort[i];
+        }
+        std::sort(err_mat_sort_std.begin(), err_mat_sort_std.end());
 
-            // Copy sorted elements back to gsl::vector
-            for (size_t i = 0; i < lf_data.err_mat_sort.size(); ++i) {
-                lf_data.err_mat_sort[i] = err_mat_sort_std[i];
-            }
+        // Copy sorted elements back to gsl::vector
+        for (size_t i = 0; i < lf_data.err_mat_sort.size(); ++i) {
+            lf_data.err_mat_sort[i] = err_mat_sort_std[i];
+        }
 
-            // Create a new vector called "err_mat_sortIdx"
-            lf_data.err_mat_sortIdx.resize(lf_data.err_mat_sort.size());
-            // Obtain the sorted indices
-            for (size_t i = 0; i < lf_data.err_mat_sort.size(); ++i) {
-                for (size_t j = 0; j < lf_data.err_mat_sort.size(); ++j) {
-                    if (lf_data.err_mat_sort[i] == lf_data.err_mat[j]) {
-                        lf_data.err_mat_sortIdx[i] = j;
-                        break;
-                    }
+        // Create a new vector called "err_mat_sortIdx"
+        lf_data.err_mat_sortIdx.resize(lf_data.err_mat_sort.size());
+        // Obtain the sorted indices
+        for (size_t i = 0; i < lf_data.err_mat_sort.size(); ++i) {
+            for (size_t j = 0; j < lf_data.err_mat_sort.size(); ++j) {
+                if (lf_data.err_mat_sort[i] == lf_data.err_mat[j]) {
+                    lf_data.err_mat_sortIdx[i] = j;
+                    break;
                 }
             }
+        }
 
 
 
-            //  Rd_n(n,1:ncands)=Rd_set(err_mat_sortIdx(1:ncands));
+        //  Rd_n(n,1:ncands)=Rd_set(err_mat_sortIdx(1:ncands));
 
-                // 1. Get the err_mat_sortIdx(1:ncands) like the index value of the vectors
-            lf_data.Rd_set_err_mat_sortIdx = lf_data.err_mat_sortIdx.subvector(1, ncands);
-
-
-                // 2. Use the ID vectors to tract the values to replace "Rd_set(err_mat_sortIdx(1:ncands))"
-            lf_data.Rd_set_err_mat_sortVal.resize(lf_data.Rd_set_err_mat_sortIdx.size());
-
-            for (size_t i = 0; i < ncands; i++)
-            {
-                int index = lf_data.Rd_set_err_mat_sortIdx[i];
-                lf_data.Rd_set_err_mat_sortVal(i) = lf_data.Rd_set[index];
-                lf_data.Rd_n(n, i) = lf_data.Rd_set_err_mat_sortVal(i);
-
-            }
+        // 1. Get the err_mat_sortIdx(1:ncands) like the index value of the vectors
+        lf_data.Rd_set_err_mat_sortIdx = lf_data.err_mat_sortIdx.subvector(1, ncands);
 
 
+        // 2. Use the ID vectors to tract the values to replace "Rd_set(err_mat_sortIdx(1:ncands))"
+        lf_data.Rd_set_err_mat_sortVal.resize(lf_data.Rd_set_err_mat_sortIdx.size());
+
+        for (size_t i = 0; i < ncands; i++)
+        {
+            int index = lf_data.Rd_set_err_mat_sortIdx[i];
+            lf_data.Rd_set_err_mat_sortVal(i) = lf_data.Rd_set[index];
+            lf_data.Rd_n(n, i) = lf_data.Rd_set_err_mat_sortVal(i);
+
+        }
 
 
 
 
-            // exh_err_n=err_mat_sort(1:ncands);
-            lf_data.exh_err_n = lf_data.err_mat_sort.subvector(1, ncands);
 
 
-            // cost(n,1:ncands) = exh_err_n(:)';
-            for (size_t i = 0; i < ncands; i++)
-            {
-                lf_data.cost(n, i) = lf_data.exh_err_n(i);
-            }
+        // exh_err_n=err_mat_sort(1:ncands);
+        lf_data.exh_err_n = lf_data.err_mat_sort.subvector(1, ncands);
+
+
+        // cost(n,1:ncands) = exh_err_n(:)';
+        for (size_t i = 0; i < ncands; i++)
+        {
+            lf_data.cost(n, i) = lf_data.exh_err_n(i);
+        }
 
 
 
 /******************************** Find optimum Rd value (dynamic programming) ****************************************/
-            if (n > 1) {
+        if (n > 1) {
 
-                gsl::matrix costm(ncands, ncands); // transition cost matrix: rows (previous), cols (current)
-                costm.set_all(0); // Initialize costm to all zeros
+            gsl::matrix costm(ncands, ncands); // transition cost matrix: rows (previous), cols (current)
+            costm.set_all(0); // Initialize costm to all zeros
 
-                for (int c = 0; c < ncands; ++c) {
-                    // Transitions TO states in current frame
-                    Rd2R(lf_data.Rd_n(n, c), lf_data.EE(n), lf_data.F0_cur, lf_data.Ra_try, lf_data.Rk_try, lf_data.Rg_try);
-
-
-                    lf_cont(lf_data.F0_cur, params.fs, lf_data.Ra_try, lf_data.Rk_try, lf_data.Rg_try, lf_data.EE(n), lf_data.LFpulse_cur);
+            for (int c = 0; c < ncands; ++c) {
+                // Transitions TO states in current frame
+                Rd2R(lf_data.Rd_n(n, c), lf_data.EE(n), lf_data.F0_cur, lf_data.Ra_try, lf_data.Rk_try, lf_data.Rg_try);
 
 
-                    for (int p = 0; p < ncands; ++p) {
-
-                        // Transitions FROM states in previous frame
-                        // [Ra_prev,Rk_prev,Rg_prev] = Rd2R(Rd_n(n-1,p),EE(n),F0_cur);
-
-                        Rd2R(lf_data.Rd_n(n-1,p), lf_data.EE(n), lf_data.F0_cur, lf_data.Ra_prev, lf_data.Rk_prev, lf_data.Rg_prev);
-
-                        // LFpulse_prev = lf_cont(F0_cur,fs,Ra_prev,Rk_prev,Rg_prev,EE(n));
-                        lf_cont(lf_data.F0_cur, params.fs, lf_data.Ra_prev, lf_data.Rk_prev, lf_data.Rg_cur, lf_data.EE(n), lf_data.LFpulse_prev);
+                lf_cont(lf_data.F0_cur, params.fs, lf_data.Ra_try, lf_data.Rk_try, lf_data.Rg_try, lf_data.EE(n), lf_data.LFpulse_cur);
 
 
-                        if (std::isnan( lf_data.LFpulse_cur(0)) || std::isnan( lf_data.LFpulse_prev(0))) {
-                            costm(p, c) = 0;
-                        } else {
-                            double cor_cur = computeCorrelation( lf_data.LFpulse_cur,  lf_data.LFpulse_prev);
-                            costm(p, c) = (1 - std::abs(cor_cur)) * trans_wgt; // transition cost
+                for (int p = 0; p < ncands; ++p) {
+
+                    // Transitions FROM states in previous frame
+                    // [Ra_prev,Rk_prev,Rg_prev] = Rd2R(Rd_n(n-1,p),EE(n),F0_cur);
+
+                    Rd2R(lf_data.Rd_n(n-1,p), lf_data.EE(n), lf_data.F0_cur, lf_data.Ra_prev, lf_data.Rk_prev, lf_data.Rg_prev);
+
+                    // LFpulse_prev = lf_cont(F0_cur,fs,Ra_prev,Rk_prev,Rg_prev,EE(n));
+                    lf_cont(lf_data.F0_cur, params.fs, lf_data.Ra_prev, lf_data.Rk_prev, lf_data.Rg_cur, lf_data.EE(n), lf_data.LFpulse_prev);
+
+
+                    if (std::isnan( lf_data.LFpulse_cur(0)) || std::isnan( lf_data.LFpulse_prev(0))) {
+                        costm(p, c) = 0;
+                    } else {
+                        double cor_cur = computeCorrelation( lf_data.LFpulse_cur,  lf_data.LFpulse_prev);
+                        costm(p, c) = (1 - std::abs(cor_cur)) * trans_wgt; // transition cost
+                    }
+
+
+
+                    //           costm=costm+repmat(cost(n-1,1:ncands)',1,ncands);  % add in cumulative costs
+                    //           [costi,previ]=min(costm,[],1);
+                    //           cost(n,1:ncands)=cost(n,1:ncands)+costi;
+                    //           prev(n,1:ncands)=previ;
+
+                    std::vector<double> costi(ncands);
+                    std::vector<int> previ(ncands);
+
+                    for (int j = 0; j < ncands; j++) {
+                        for (int i = 0; i < costm.get_rows(); i++) {
+                            costi[i] = costm(i, j);
                         }
-
-
-
-                        //           costm=costm+repmat(cost(n-1,1:ncands)',1,ncands);  % add in cumulative costs
-                        //           [costi,previ]=min(costm,[],1);
-                        //           cost(n,1:ncands)=cost(n,1:ncands)+costi;
-                        //           prev(n,1:ncands)=previ;
-
-                        std::vector<double> costi(ncands);
-                        std::vector<int> previ(ncands);
-
-                        for (int j = 0; j < ncands; j++) {
-                            for (int i = 0; i < costm.get_rows(); i++) {
-                                costi[i] = costm(i, j);
+                        // Find the index of the minimum value in costi
+                        double minVal = costi[0];
+                        size_t idx = 0;
+                        for (size_t i = 1; i < costi.size(); ++i) {
+                            if (costi[i] < minVal) {
+                                minVal = costi[i];
+                                idx = i;
                             }
-                            // Find the index of the minimum value in costi
-                            double minVal = costi[0];
-                            size_t idx = 0;
-                            for (size_t i = 1; i < costi.size(); ++i) {
-                                if (costi[i] < minVal) {
-                                    minVal = costi[i];
-                                    idx = i;
-                                }
-                            }
-                            previ[j] = idx;
-                            lf_data.cost(n, j) += costi[previ[j]];
                         }
+                        previ[j] = idx;
+                        lf_data.cost(n, j) += costi[previ[j]];
+                    }
 
 
-                        // Update prev matrix
-                        for (int j = 0; j < ncands; j++) {
-                            lf_data.prev(n, j) = previ[j];
-                        }
+                    // Update prev matrix
+                    for (int j = 0; j < ncands; j++) {
+                        lf_data.prev(n, j) = previ[j];
                     }
                 }
             }
+        }
 
 
         // gsl::vector_int idx_values(n);  // Declare a gsl::vector_int to store the idx values
@@ -949,7 +949,7 @@ int main(int argc, char *argv[]) {
 
     /* Finish */
     //    std::cout << "*********************Finished analysis.*********************" << std::endl << std::endl;
-    //    std::cout << "*********************Rd_opt params*********************"<< lf_data.Rd_opt << std::endl;
+       std::cout << "*********************Rd_opt params*********************"<< lf_data.Rd_opt << std::endl;
 
     return EXIT_SUCCESS;
 

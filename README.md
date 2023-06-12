@@ -4,7 +4,7 @@
 ```
 x2x +fa slt_arctic_a0001.f0 > output.txt
 ```
-Here is to convert an Asscii file into float number. 
+Here is to convert an Asscii file into float number.
 This is the analysis part:
 
 ```
@@ -16,10 +16,10 @@ This is the analysis part:
 The GlottDNN package contains two main parts:
 
 1) The glottal vocoder written in C++
-   - Dependencies: `libsndfile`, `libgsl`, `libconfig`
+    - Dependencies: `libsndfile`, `libgsl`, `libconfig`
 
 2) Python scripts for vocoder analysis, synthesis and training a DNN excitation model:
-   - Dependencies: `python3`, `numpy`, `pytorch>=1.1.0`
+    - Dependencies: `python3`, `numpy`, `pytorch>=1.1.0`
 
 
 ## Installation
@@ -43,7 +43,7 @@ Since the build targets are rather generically named `Analysis` and `Synthesis`,
    make install
 ```
 
-Usually `configure` and `make` should be enough, but if the process complains about missing files try running 
+Usually `configure` and `make` should be enough, but if the process complains about missing files try running
 ``` bash
 automake --add-missing
 ```
@@ -53,7 +53,7 @@ automake --add-missing
 Conda environments are useful for managing dependencies and keeping a GlottDNN installation contained from the systemwide environment. For more information about managing conda enviroments, see https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html
 
 
-Create and activate a new conda environment. 
+Create and activate a new conda environment.
 ```bash
 conda create -n glottdnn
 conda activate glottdnn
@@ -69,7 +69,7 @@ Optionally, install pytorch with conda
 conda install pytorch torchaudio -c pytorch
 ```
 
-Set compiler flags to compiler flags to point to the currently active conda environment. The compiled binaries will be installed in `$CONDA_PREFIX/bin/`  
+Set compiler flags to compiler flags to point to the currently active conda environment. The compiled binaries will be installed in `$CONDA_PREFIX/bin/`
 ``` bash
 export LDFLAGS=-L$CONDA_PREFIX/lib/ 
 export CPPFLAGS=-I$CONDA_PREFIX/include/
@@ -99,7 +99,7 @@ echo 'unset OLD_LD_LIBRARY_PATH' >> $DEACTIVATE_SCRIPT
 
 
 
-These examples assume 16kHz sampling rate audio. Other sampling rates are feasible, but you should change the config accordingly.  
+These examples assume 16kHz sampling rate audio. Other sampling rates are feasible, but you should change the config accordingly.
 
 
 Let's first get a wave file from the Arctic database
@@ -120,7 +120,7 @@ Now run GlottDNN Analysis program with default configuration
 ./src/Analysis "$DATADIR/$BASENAME.wav" ./config/config_default_16k.cfg
 ```
 
-We should now have the following files 
+We should now have the following files
 
 ```
 ls ./data/tmp/ 
@@ -134,7 +134,7 @@ ls ./data/tmp/
     ./data/tmp/slt_arctic_a0001.src.wav
 ```
 
-### Synthesis with single pulse excitation 
+### Synthesis with single pulse excitation
 
 First let's run copy synthesis with `SINGLE_PULSE` excitation. This method uses a single fixed glottal pulse, which is modified according to F0 and HNR (similarly to the original GlottHMM vocoder).
 
@@ -151,8 +151,8 @@ The single pulse excitation will sound somewhat buzzy, so let's try if we can do
 
 ### Synthesis with original pulses
 
- We already extracted glottal pulses from the signal and stored them in `./data/tmp/slt_arctic_a0001.pls`. 
- Better quality can be achieved by re-assembling the original pulses using pitch synchronous overlap-add. 
+We already extracted glottal pulses from the signal and stored them in `./data/tmp/slt_arctic_a0001.pls`.
+Better quality can be achieved by re-assembling the original pulses using pitch synchronous overlap-add.
 
 To override some of the default config values, we can create a "user config" file and run Synthesis with two config files
 
@@ -174,7 +174,7 @@ mv "$DATADIR/$BASENAME.syn.wav" "$DATADIR/$BASENAME.syn.paf.wav"
 
 Of course the original pulses are not available in many applications (such as text-to-speech). For this, we can use a trainable excitation model (neural net), which generates the pulses from acoustic features.
 
-## Built-in neural net excitation model 
+## Built-in neural net excitation model
 
 The present version requires `pytorch>=1.1.0` and all `theano` dependencies have been removed.
 
@@ -206,8 +206,8 @@ make_dirs = 1
 make_scp = 1
 ```
 
-Optionally, use REAPER for pitch (F0) and GCI analysis. 
-Also optionally, use RAPT from SPTK for pitch analysis. These programs need to be installed separately, so this example does not use them. 
+Optionally, use REAPER for pitch (F0) and GCI analysis.
+Also optionally, use RAPT from SPTK for pitch analysis. These programs need to be installed separately, so this example does not use them.
 
 ``` python
 do_reaper_pitch_analysis = 0
@@ -250,7 +250,7 @@ https://github.com/ljuvela/GlottDNN/issues
 
 For more examples and explanation, check the documentation in
 
-https://aalto-speech.github.io/GlottDNN/ 
+https://aalto-speech.github.io/GlottDNN/
 
 ## Licence
 
@@ -259,7 +259,7 @@ Copyright 2016-2018 Lauri Juvela and Manu Airaksinen
 This product includes software developed at Aalto University (http://www.aalto.fi/).
 
 Licensed under the Apache License, Version 2.0
-See LICENCE and NOTICE for full licence details. 
+See LICENCE and NOTICE for full licence details.
 
 If you publish work based on GlottDNN, please cite
 ```
@@ -269,11 +269,11 @@ If you publish work based on GlottDNN, please cite
     doi: 10.1109/TASLP.2018.2835720. 
 ```    
 
-The paper also contains a technical details of the vocoder 
+The paper also contains a technical details of the vocoder
 
-If the software is to be deployed in commercial products, permission must be asked from Aalto University 
-    (please contact: lauri.juvela@aalto.fi , manu.airaksinen@aalto.fi or paavo.alku@aalto.fi). 
+If the software is to be deployed in commercial products, permission must be asked from Aalto University
+(please contact: lauri.juvela@aalto.fi , manu.airaksinen@aalto.fi or paavo.alku@aalto.fi).
 
-This software distribution also includes third-party C++ wrappers for the GSL library, which are licenced separately under the GPL 3 licence. 
+This software distribution also includes third-party C++ wrappers for the GSL library, which are licenced separately under the GPL 3 licence.
 For details, see
-    `src/gslwrap/LICENCE`
+`src/gslwrap/LICENCE`

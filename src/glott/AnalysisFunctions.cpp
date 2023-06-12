@@ -131,49 +131,15 @@ int GetF0(const Param &params, const gsl::vector &signal,
  * Get the glottal closure instants (GCIs) of the analyzed signal.
  * input: params, signal
  * output: gci_signal: Sparse signal-length representation of gcis as ones and otherwise zeros
- * gci_inds I think so
+ *
  */
-
-
-
-// This code should be modified for the later days cuz the low efficicency, which read the RemoveDuplicatedGciIndices
-// This is very low efficiency!!!!!!!!!! TODO
-void RemoveDuplicateGciIndices(gsl::vector_int *gci_inds) {
-    gsl::vector_int temp(gci_inds->size());
-    size_t temp_index = 0;
-
-    for(size_t i = 0; i < gci_inds->size(); ++i) {
-        bool is_duplicate = false;
-        for (size_t j = 0; j < temp_index; ++j) {
-            if ((*gci_inds)(i) == temp(j)) {
-                is_duplicate = true;
-                break;
-            }
-        }
-
-        if (!is_duplicate) {
-            temp(temp_index) = (*gci_inds)(i);
-            temp_index++;
-        }
-    }
-
-    // Resize gci_inds to the correct size
-    *gci_inds = gsl::vector_int(temp_index);
-
-    // Copy unique values from temp to gci_inds
-    for(size_t i = 0; i < temp_index; ++i) {
-        (*gci_inds)(i) = temp(i);
-    }
-}
-
-
-
 int GetGci(const Param &params, const gsl::vector &signal, const gsl::vector &source_signal_iaif, const gsl::vector &fundf, gsl::vector_int *gci_inds) {
 	if(params.use_external_gci) {
 		std::cout << "Reading GCI information from external file: " << params.external_gci_filename << " ...";
 		gsl::vector gcis;
 		if(ReadGslVector(params.external_gci_filename.c_str(), params.data_type, &gcis) == EXIT_FAILURE)
          return EXIT_FAILURE;
+
 		*gci_inds = gsl::vector_int(gcis.size());
 		size_t i;
 		for (i=0; i<gci_inds->size();i++) {
@@ -185,14 +151,13 @@ int GetGci(const Param &params, const gsl::vector &signal, const gsl::vector &so
       gsl::vector mean_based_signal(signal.size(),true);
 
       MeanBasedSignal(signal, params.fs, getMeanF0(fundf), &mean_based_signal);
-//      MovingAverageFilter(3,&mean_based_signal); // remove small fluctuation
+      //MovingAverageFilter(3,&mean_based_signal); // remove small fluctuation
 
       SedreamsGciDetection(source_signal_iaif,mean_based_signal,gci_inds);
 
 	}
-
-    RemoveDuplicateGciIndices(gci_inds);
-    std::cout << " done." << std::endl;
+    
+   std::cout << " done." << std::endl;
 	return EXIT_SUCCESS;
 }
 
