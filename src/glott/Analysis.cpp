@@ -514,12 +514,18 @@ int main(int argc, char *argv[]) {
    /* Convert glottal source AR polynomials to LSF */
    Poly2Lsf(data.poly_glot, &(data.lsf_glot));
 
-   /* Write analyzed features to files */
-   data.SaveData(params);
-
     // start to do the Rd param extraction
     // declare the struct variable
     LfData lf_data;
+   GetRd(params, data.source_signal, data.gci_inds, &(lf_data.Rd_opt));
+
+
+
+
+   /* Write analyzed features to files */
+   data.SaveData(params);
+
+
 /******************************** Initial settings *********************************************************************/
 
     // Dynamic programming weights
@@ -941,7 +947,9 @@ int main(int argc, char *argv[]) {
     //    Rd_opt = smooth(medfilt1(Rd_opt,11),5)*.5;
     for (size_t i = 0; i < lf_data.Rd_opt.size(); i++) {
         lf_data.Rd_opt[i] *= 0.5;
+
     }
+    std::cout << "********************* Rd_opt params *********************" << lf_data.Rd_opt << std::endl;
 
 
 
@@ -949,7 +957,6 @@ int main(int argc, char *argv[]) {
     //    std::cout << "*********************Finished analysis.*********************" << std::endl << std::endl;
 //    std::cout << "*********************EE params*********************" << data.gci_inds << std::endl;
 
-    std::cout << "********************* Rd_opt params *********************" << data.gci_inds << std::endl;
 
 
     return EXIT_SUCCESS;

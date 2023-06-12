@@ -29,6 +29,17 @@
 
 int PULSE_NOT_FOUND = -1;
 
+
+
+
+
+
+
+
+
+
+
+
 int PolarityDetection(const Param &params, gsl::vector *signal,
                       gsl::vector *source_signal_iaif) {
   switch (params.signal_polarity) {
@@ -945,4 +956,57 @@ int GetPitchSynchFrame(const Param &params, const gsl::vector &signal,
   }
 
   return EXIT_SUCCESS;
+}
+
+
+
+double GetRd(const Param &params, const gsl::vector &source_signal,
+             const gsl::vector_int &gci_inds, gsl::vector *Rd_opt) {
+    std::cout << "Rd analysis ";
+
+    if (params.use_external_f0) {
+        std::cout << "using external F0 file: " << params.external_f0_filename
+                  << " ...";
+
+        *Rd_opt = gsl::vector(gci_inds.size());
+
+
+
+//        gsl::vector signal_frame = gsl::vector(params.frame_length);
+//        // gsl::vector glottal_frame = gsl::vector(2*params.frame_length); // Longer
+//        // frame
+//        gsl::vector glottal_frame =
+//                gsl::vector(params.frame_length_long);  // Longer frame
+//        int frame_index;
+//        double ff;
+//        gsl::matrix Rd_opt_candidates(params.number_of_frames,
+//                                      NUMBER_OF_F0_CANDIDATES);
+//        gsl::vector candidates_vec(NUMBER_OF_F0_CANDIDATES);
+//        for (frame_index = 0; frame_index < params.number_of_frames;
+//             frame_index++) {
+//            GetFrame(signal, frame_index, params.frame_shift, &signal_frame, NULL);
+//            GetFrame(gcis, frame_index, params.frame_shift,
+//                     &glottal_frame, NULL);
+//
+//            FundamentalFrequency(params, glottal_frame, signal_frame, &ff,
+//                                 &candidates_vec);
+//            (*Rd_opt)(frame_index) = ff;
+//
+//            Rd_opt_candidates.set_row_vec(frame_index, candidates_vec);
+//        }
+//
+//        /* Copy original F0 */
+//        gsl::vector Rd_opt_orig(*Rd_opt);
+//
+//        /* Process */
+//        MedianFilter(3, Rd_opt);
+//        FillF0Gaps(Rd_opt);
+//        Rd_optPostProcessing(params, Rd_opt_orig, Rd_opt_candidates, Rd_opt);
+//        MedianFilter(3, Rd_opt);
+//        FillF0Gaps(Rd_opt);
+//        Rd_optPostProcessing(params, Rd_opt_orig, Rd_opt_candidates, Rd_opt);
+//        MedianFilter(3, Rd_opt);
+    }
+    std::cout << " done." << std::endl;
+    return EXIT_SUCCESS;
 }
