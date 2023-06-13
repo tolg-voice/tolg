@@ -216,9 +216,7 @@ int AnalysisData::SaveData(const Param &params) {
     if (params.extract_rd) {
         // Write derivative of source signal to file with extension ".dev_src"
         filename = GetParamPath("rd", params.extension_rd, params.dir_exc, params);
-        if(WriteWavFile(filename, source_dev_signal, params.fs) == EXIT_FAILURE)
-            return EXIT_FAILURE;
-
+        WriteGslVector(filename, params.data_type, Rd_opt);
     }
 
 
