@@ -219,6 +219,7 @@ int GetGci(const Param &params, const gsl::vector &signal, const gsl::vector &so
 	}
 
     RemoveDuplicateGciIndices(gci_inds);
+
     std::cout << " done." << std::endl;
 	return EXIT_SUCCESS;
 }
