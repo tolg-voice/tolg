@@ -1288,28 +1288,56 @@ gsl::matrix computeCorrelationMatrix(const gsl::vector& X, const gsl::vector& Y)
 
 
 
+//std::vector<double> medfilt1(const std::vector<double>& input, int windowSize) {
+//    std::vector<double> output(input.size());
+//    int halfWindowSize = windowSize / 2;
+//
+//    for (int i = 0; i < input.size(); i++) {
+//        std::vector<double> window;
+//
+//        for (int j = std::max(0, i - halfWindowSize); j <= std::min(i + halfWindowSize, static_cast<int>(input.size()) - 1); j++) {
+//            window.push_back(input[j]);
+//        }
+//
+//        std::sort(window.begin(), window.end());
+//
+//        if (window.size() % 2 == 0) {
+//            output[i] = (window[window.size() / 2 - 1] + window[window.size() / 2]) / 2.0;
+//        } else {
+//            output[i] = window[window.size() / 2];
+//        }
+//    }
+//
+//    return output;
+//}
+
 std::vector<double> medfilt1(const std::vector<double>& input, int windowSize) {
     std::vector<double> output(input.size());
-    int halfWindowSize = windowSize / 2;
+    int w2 = windowSize / 2;
+    int w = 2 * w2 + 1;
+    int n = input.size();
 
-    for (int i = 0; i < input.size(); i++) {
-        std::vector<double> window;
+    std::vector<double> m(w, 0.0);
+    double s0 = input[0];
+    double sl = input[n - 1];
 
-        for (int j = std::max(0, i - halfWindowSize); j <= std::min(i + halfWindowSize, static_cast<int>(input.size()) - 1); j++) {
-            window.push_back(input[j]);
+    for (int i = 0; i < w; i++) {
+        m[i] = (i < w2) ? s0 : sl;
+    }
+
+    for (int i = 0; i < n; i++) {
+        for (int j = 0; j < w; j++) {
+            m[j] = (j < w - 1) ? m[j + 1] : input[i];
         }
 
-        std::sort(window.begin(), window.end());
-
-        if (window.size() % 2 == 0) {
-            output[i] = (window[window.size() / 2 - 1] + window[window.size() / 2]) / 2.0;
-        } else {
-            output[i] = window[window.size() / 2];
-        }
+        std::sort(m.begin(), m.end());
+        output[i] = m[w2];
     }
 
     return output;
 }
+
+
 
 std::vector<double> smooth(const std::vector<double>& input, int windowSize) {
     std::vector<double> output(input.size());
@@ -1332,7 +1360,21 @@ std::vector<double> smooth(const std::vector<double>& input, int windowSize) {
 
 
 
+gsl_matrix * RepMatHorizAlloc(gsl_vector * v, size_t k) {
+    gsl_matrix *mat = gsl_matrix_alloc(k, v->size);
+    for (size_t i = 0; i < k; ++i) {
+        gsl_matrix_set_row(mat, i, v);
+    }
+    return mat;
+}
 
+gsl_matrix * RepMatVertAlloc(gsl_vector * v, size_t k) {
+    gsl_matrix *mat = gsl_matrix_alloc(v->size, k);
+    for (size_t i = 0; i < k; ++i) {
+        gsl_matrix_set_col(mat, i, v);
+    }
+    return mat;
+}
 
 
 
@@ -1437,11 +1479,11 @@ double GetRd(const Param &params, const gsl::vector &source_signal,
 
     // Dynamic programming settings
     // nframe=length(GCI);
-    double nframe = gci_inds.size();
+    int nframe = gci_inds.size();
 
 
     // ncands = 5; Number of candidate LF model configurations to consider
-    double ncands = 5;
+    int ncands = 5;
 
     // Rd_n=zeros(nframe,ncands);
     lf_data.Rd_n = gsl::matrix(nframe, ncands);
@@ -1449,6 +1491,8 @@ double GetRd(const Param &params, const gsl::vector &source_signal,
     lf_data.cost = gsl::matrix(nframe, ncands);
     // prev=zeros(nframe,ncands);      % traceback pointer
     lf_data.prev = gsl::matrix(nframe, ncands);
+
+    gsl_matrix_int* prev = gsl_matrix_int_alloc(nframe, ncands);
 
 
 
@@ -1501,32 +1545,14 @@ double GetRd(const Param &params, const gsl::vector &source_signal,
 
 
         //        glot_seg=glot(start:finish);
-        //        glot_seg=glot_seg(:);
-
-        std::cout << "********************* start *********************" << start <<  std::endl;
-        std::cout << "********************* finish *********************" << source_signal.size() <<  std::endl;
+        //        glot_seg=glot_seg(:);s
 
         gsl::vector glot_seg(source_signal.subvector(start, finish - start + 1));
         lf_data.glot_seg = glot_seg;
 
 
 
-
-        //        glot_seg_spec=20*log10(abs(fft(glot_seg)));
-        //        size_t fft_len = lf_data.glot_seg.size();
-        //        ComplexVector glot_seg_spec(fft_len);
-        //        // Perform FFT on glot_seg
-        //        FFTRadix2(lf_data.glot_seg, fft_len, &glot_seg_spec);
-        //
-        //        lf_data.glot_seg_spec = glot_seg_spec.getAbs();
-        //
-        //        for (size_t i = 0; i < lf_data.glot_seg_spec.size(); i++) {
-        //            lf_data.glot_seg_spec(i) = 20 * log10(lf_data.glot_seg_spec(i));
-        //        }
-
         //  glot_seg_spec=20*log10(abs(fft(glot_seg)));
-
-
         ComplexVector glot_seg_spec;
         FFTRadix2(lf_data.glot_seg, &glot_seg_spec);
 
@@ -1701,6 +1727,7 @@ double GetRd(const Param &params, const gsl::vector &source_signal,
             gsl::matrix costm(ncands, ncands); // transition cost matrix: rows (previous), cols (current)
             costm.set_all(0); // Initialize costm to all zeros
 
+
             for (int c = 0; c < ncands; ++c) {
 
 /***************************************　Transitions TO states in current frame　**************************************/
@@ -1736,6 +1763,7 @@ double GetRd(const Param &params, const gsl::vector &source_signal,
                     //           cost(n,1:ncands)=cost(n,1:ncands)+costi;
                     //           prev(n,1:ncands)=previ;
 
+
                     std::vector<double> costi(ncands);
                     std::vector<int> previ(ncands);
 
@@ -1754,16 +1782,24 @@ double GetRd(const Param &params, const gsl::vector &source_signal,
                         }
                         previ[j] = idx;
                         lf_data.cost(n, j) += costi[previ[j]];
+
+
                     }
+
 
 
                     // Update prev matrix
                     for (int j = 0; j < ncands; j++) {
                         lf_data.prev(n, j) = previ[j];
                     }
+
+
                 }
+
+
             }
         }
+
 
 
         // gsl::vector_int idx_values(n);  // Declare a gsl::vector_int to store the idx values
@@ -1813,8 +1849,26 @@ double GetRd(const Param &params, const gsl::vector &source_signal,
     }
 
 
+    // Set the integer values for lf_data.prev
+        for (size_t i = 0; i < nframe; ++i) {
+            for (size_t j = 0; j < ncands; ++j) {
+                int value = static_cast<int>(lf_data.prev(i, j));
+                gsl_matrix_int_set(prev, i, j, value);
+            }
+        }
+
+    // Printing the integer values of lf_data.prev
+        for (size_t i = 0; i < nframe; ++i) {
+            for (size_t j = 0; j < ncands; ++j) {
+                std::cout << gsl_matrix_int_get(prev, i, j) << " ";
+            }
+            std::cout << std::endl;
+        }
+
+
 
     medfilt1(lf_data.Rd_opt, 11);
+    std::cout << "********************* cost params *********************" << lf_data.Rd_opt << std::endl;
 
     smooth(lf_data.Rd_opt, 5);
 
@@ -1833,6 +1887,5 @@ double GetRd(const Param &params, const gsl::vector &source_signal,
     }
 //        *Rd_opt(0) = lf_data.Rd_opt;
 
-    std::cout << " done." << std::endl;
     return EXIT_SUCCESS;
 }

@@ -164,8 +164,7 @@ int main(int argc, char *argv[]) {
    /* start to do the Rd param extraction */
    GetRd(params, data.source_signal, data.gci_inds, &(data.Rd_opt));
 
-//    std::cout << "********************* Rd_opt params *********************" << data.gci_inds << std::endl;
-    std::cout << "********************* Rd_opt params *********************" << data.Rd_opt << std::endl;
+//    std::cout << "********************* cost params *********************" << data.gci_inds << std::endl;
 
    /* Write analyzed features to files */
    data.SaveData(params);
