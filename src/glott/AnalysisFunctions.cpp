@@ -1344,63 +1344,146 @@ std::vector<double> medfilt1(const std::vector<double>& input, int windowSize) {
 
 
 
+
 //std::vector<double> smooth(const std::vector<double>& input, int windowSize) {
 //    std::vector<double> output(input.size());
-//    int halfWindowSize = windowSize / 2;
+//    int halfWindowSize = (windowSize - 1) / 2;
 //
-//    for (int i = 0; i < input.size(); i++) {
-//        double sum = 0.0;
-//        int count = 0;
-//
-//        for (int j = std::max(0, i - halfWindowSize); j <= std::min(i + halfWindowSize, static_cast<int>(input.size()) - 1); j++) {
-//            sum += input[j];
-//            count++;
+//    if (input.size() > windowSize) {
+//        for (int i = 0; i < input.size(); i++) {
+//            if (i - halfWindowSize <= 0) { // First segment
+//                output[i] = 0;
+//                double sum = 0.0;
+//                int count = 0;
+//                for (int j = 0; j <= 2 * i; j++) {
+//                    sum += input[j];
+//                    count++;
+//                }
+//                output[i] = sum / (count * 2 + 1);
+//            } else if (i - halfWindowSize > 0 && input.size() - 1 - i > halfWindowSize) { // Second segment
+//                output[i] = 0;
+//                double sum = 0.0;
+//                for (int j = i - halfWindowSize; j <= i + halfWindowSize; j++) {
+//                    sum += input[j];
+//                }
+//                output[i] = sum / windowSize;
+//            } else { // Third segment
+//                output[i] = 0;
+//                double sum = 0.0;
+//                int count = 0;
+//                for (int j = 2 * i - (input.size() - 1); j <= input.size() - 1; j++) {
+//                    sum += input[j];
+//                    count++;
+//                }
+//                output[i] = sum / (2 * (input.size() - 1 - i) + 1);
+//            }
 //        }
-//
-//        output[i] = sum / static_cast<double>(count);
 //    }
 //
 //    return output;
 //}
-std::vector<double> smooth(const std::vector<double>& input, int windowSize) {
-    std::vector<double> output(input.size());
-    int halfWindowSize = (windowSize - 1) / 2;
+//std::vector<double> smooth(const std::vector<double>& input, int windowSize) {
+//    int size = input.size();
+//    std::vector<double> Z(size, 0.0);
+//    int b = (windowSize - 1) / 2;
+//
+//    for (int i = 0; i < size; i++) {
+//        if (i <= b) {  // First segment
+//            Z[i] = 0.0;
+//            double sum = 0.0;
+//            for (int j = 0; j <= 2 * i; j++) {
+//                sum += input[j];
+//            }
+//            Z[i] = sum / ((i * 2) + 1);
+//        } else if (i >= size - b) {  // Third segment
+//            Z[i] = 0.0;
+//            double sum = 0.0;
+//            for (int j = 2 * i - size + 1; j < size; j++) {
+//                sum += input[j];
+//            }
+//            Z[i] = sum / ((size - i - 1) * 2 + 1);
+//        } else {  // Second segment
+//            Z[i] = 0.0;
+//            double sum = 0.0;
+//            for (int j = i - b; j <= i + b; j++) {
+//                sum += input[j];
+//            }
+//            Z[i] = sum / windowSize;
+//        }
+//    }
+//
+//    return Z;
+//}
 
-    if (input.size() > windowSize) {
-        for (int i = 0; i < input.size(); i++) {
-            if (i - halfWindowSize <= 0) { // First segment
-                output[i] = 0;
-                double sum = 0.0;
-                int count = 0;
-                for (int j = 0; j <= 2 * i; j++) {
-                    sum += input[j];
-                    count++;
-                }
-                output[i] = sum / (count * 2 + 1);
-            } else if (i - halfWindowSize > 0 && input.size() - 1 - i > halfWindowSize) { // Second segment
-                output[i] = 0;
-                double sum = 0.0;
-                for (int j = i - halfWindowSize; j <= i + halfWindowSize; j++) {
-                    sum += input[j];
-                }
-                output[i] = sum / windowSize;
-            } else { // Third segment
-                output[i] = 0;
-                double sum = 0.0;
-                int count = 0;
-                for (int j = 2 * i - (input.size() - 1); j <= input.size() - 1; j++) {
-                    sum += input[j];
-                    count++;
-                }
-                output[i] = sum / (2 * (input.size() - 1 - i) + 1);
+//
+//#include <vector>
+//
+//std::vector<double> smooth(const std::vector<double>& input, int windowSize) {
+//    std::vector<double> output(input.size());
+//
+//    int start = 0;
+//    int end = input.size() - 1;
+//    int b = (windowSize - 1) / 2;
+//
+//    if ((end - start + 1) > windowSize) {
+//        for (int i = start; i <= end; i++) {
+//            if ((i - start) <= b) {
+//                output[i] = 0;
+//                int j = start;
+//                for (; j <= 2 * i - start; j++) {
+//                    output[i] += input[j];
+//                }
+//                output[i] /= ((i - start) * 2 + 1);
+//            } else if (((i - start) > b) && ((end - i) > b)) {
+//                output[i] = 0;
+//                for (int j = i - b; j <= i + b; j++) {
+//                    output[i] += input[j];
+//                }
+//                output[i] /= windowSize;
+//            } else {
+//                output[i] = 0;
+//                for (int j = 2 * i - end; j <= end; j++) {
+//                    output[i] += input[j];
+//                }
+//                output[i] /= (2 * (end - i) + 1);
+//            }
+//        }
+//    }
+//
+//    return output;
+//}
+
+std::vector<double> smooth(const std::vector<double>& input, int windowSize) {
+    int dataSize = input.size();
+    std::vector<double> output(dataSize);
+
+    int b = (windowSize - 1) / 2;
+    for (int i = 0; i < dataSize; i++) {
+        if (i <= b) { // First segment
+            output[i] = 0;
+            for (int j = 0; j <= 2 * i; j++) {
+                output[i] += input[j];
             }
+            output[i] /= ((i + 1) * 2);
+        }
+        else if (i >= dataSize - b) { // Third segment
+            output[i] = 0;
+            for (int j = 2 * i - dataSize + 1; j < dataSize; j++) {
+                output[i] += input[j];
+            }
+            output[i] /= ((dataSize - i) * 2);
+        }
+        else { // Second segment
+            output[i] = 0;
+            for (int j = i - b; j <= i + b; j++) {
+                output[i] += input[j];
+            }
+            output[i] /= windowSize;
         }
     }
 
     return output;
 }
-
-
 
 gsl_matrix * RepMatHorizAlloc(gsl_vector * v, size_t k) {
     gsl_matrix *mat = gsl_matrix_alloc(k, v->size);
@@ -1915,7 +1998,9 @@ double GetRd(const Param &params, const gsl::vector &source_signal,
         input[i] = lf_data.Rd_opt[i];
     }
     std::vector<double> medfilt1_result = medfilt1(input, 11);
-
+    for (size_t i = 0; i < lf_data.Rd_opt.size(); i++) {
+        lf_data.Rd_opt[i] = medfilt1_result[i];
+    }
 
 
 //    smooth(lf_data.Rd_opt, 5);
@@ -1930,9 +2015,9 @@ double GetRd(const Param &params, const gsl::vector &source_signal,
         lf_data.Rd_opt[i] *= 0.5;
 
     }
-    std::cout << "********************* cost params *********************" << lf_data.Rd_opt << std::endl;
 
 //        Rd_opt->copy(lf_data.Rd_opt);
+    std::cout << "********************* cost params *********************" << lf_data.Rd_opt << std::endl;
 
     for (size_t i = 0; i < lf_data.Rd_opt.size(); i++) {
         (*Rd_opt)(i) = lf_data.Rd_opt[i];
