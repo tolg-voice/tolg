@@ -43,6 +43,12 @@
 #include <gsl/gsl_filter.h>
 //#include "medfilt1.h"
 
+// Add the Reaper
+#include "core/file_resource.h"
+#include "core/track.h"
+#include "epoch_tracker/epoch_tracker.h"
+#include "wave/wave.h"
+
 int PULSE_NOT_FOUND = -1;
 
 
@@ -213,8 +219,7 @@ int GetGci(const Param &params, const gsl::vector &signal, const gsl::vector &so
 
       MeanBasedSignal(signal, params.fs, getMeanF0(fundf), &mean_based_signal);
 
-
-      //      MovingAverageFilter(3,&mean_based_signal); // remove small fluctuation
+//      MovingAverageFilter(3,&mean_based_signal); // remove small fluctuation
 
       SedreamsGciDetection(source_signal_iaif,mean_based_signal,gci_inds);
 
@@ -1503,6 +1508,7 @@ gsl_matrix * RepMatVertAlloc(gsl_vector * v, size_t k) {
 
 
 
+
 double GetRd(const Param &params, const gsl::vector &source_signal,
              const gsl::vector_int &gci_inds, gsl::vector *Rd_opt) {
 
@@ -2025,3 +2031,5 @@ double GetRd(const Param &params, const gsl::vector &source_signal,
 
     return EXIT_SUCCESS;
 }
+
+

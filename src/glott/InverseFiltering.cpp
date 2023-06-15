@@ -333,7 +333,7 @@ void SedreamsGciDetection(const gsl::vector &residual, const gsl::vector &mean_b
    gsl::vector_int peak_inds;
    gsl::vector peak_values;
 
-   int number_of_peaks = FindPeaks(mean_based_signal, 0.005, &peak_inds, &peak_values); // default
+   int number_of_peaks = FindPeaks(mean_based_signal, 0.001, &peak_inds, &peak_values); // default
    //int number_of_peaks = FindPeaks(mean_based_signal, 0.001, &peak_inds, &peak_values);
 
    gsl::vector_int start(number_of_peaks);
