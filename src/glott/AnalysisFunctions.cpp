@@ -41,7 +41,7 @@
 #include <gsl/gsl_permutation.h>
 #include <gsl/gsl_vector_int.h>
 #include <gsl/gsl_filter.h>
-
+//#include "medfilt1.h"
 
 int PULSE_NOT_FOUND = -1;
 
@@ -1011,28 +1011,6 @@ gsl::vector smooth(const gsl::vector& input, int windowSize)
     return output;
 }
 
-// Medfilt1 function
-gsl::vector medfilt1(const gsl::vector& input, int windowSize)
-{
-    gsl::vector output(input.size());
-    int halfWindowSize = windowSize / 2;
-
-    for (int i = 0; i < input.size(); i++)
-    {
-        std::vector<double> window;
-
-        for (int j = i - halfWindowSize; j <= i + halfWindowSize; j++)
-        {
-            if (j >= 0 && j < input.size())
-                window.push_back(input[j]);
-        }
-
-        std::sort(window.begin(), window.end());
-        output[i] = window[windowSize / 2];
-    }
-
-    return output;
-}
 
 /* summation function */
 double sum(double a[], int size)
@@ -1313,29 +1291,56 @@ gsl::matrix computeCorrelationMatrix(const gsl::vector& X, const gsl::vector& Y)
 
 std::vector<double> medfilt1(const std::vector<double>& input, int windowSize) {
     std::vector<double> output(input.size());
-    int w2 = windowSize / 2;
-    int w = 2 * w2 + 1;
-    int n = input.size();
+    int halfWindowSize = windowSize / 2;
 
-    std::vector<double> m(w, 0.0);
-    double s0 = input[0];
-    double sl = input[n - 1];
+    for (int j = 0; j < input.size(); j++) {
+        std::vector<double> DataAFMid(windowSize);
 
-    for (int i = 0; i < w; i++) {
-        m[i] = (i < w2) ? s0 : sl;
-    }
-
-    for (int i = 0; i < n; i++) {
-        for (int j = 0; j < w; j++) {
-            m[j] = (j < w - 1) ? m[j + 1] : input[i];
+        // Build the median array
+        for (int k = 0; k < windowSize; k++) {
+            if (((j - (windowSize - 1) / 2) + k < 0) || ((j - (windowSize - 1) / 2) + k) > (input.size() - 1))
+                DataAFMid[k] = 0;
+            else
+                DataAFMid[k] = input[(j - (windowSize - 1) / 2) + k];
         }
 
-        std::sort(m.begin(), m.end());
-        output[i] = m[w2];
+        // Sort the median array in ascending order
+        std::sort(DataAFMid.begin(), DataAFMid.end());
+
+        // Assign the middle value of the sorted array to the output
+        output[j] = DataAFMid[windowSize / 2];
     }
 
     return output;
 }
+
+
+// Medfilt1 function
+//gsl::vector medfilt1(const gsl::vector& input, int windowSize)
+//{
+//    gsl::vector output(input.size());
+//    int halfWindowSize = windowSize / 2;
+//
+//    for (int i = 0; i < input.size(); i++)
+//    {
+//        std::vector<double> window;
+//
+//        for (int j = i - halfWindowSize; j <= i + halfWindowSize; j++)
+//        {
+//            if (j >= 0 && j < input.size())
+//                window.push_back(input[j]);
+//        }
+//
+//        std::sort(window.begin(), window.end());
+//        output[i] = window[windowSize / 2];
+//    }
+//
+//    return output;
+//}
+//
+
+
+
 
 
 
@@ -1867,8 +1872,18 @@ double GetRd(const Param &params, const gsl::vector &source_signal,
 
 
 
-    medfilt1(lf_data.Rd_opt, 11);
-    std::cout << "********************* cost params *********************" << lf_data.Rd_opt << std::endl;
+//    medfilt1(lf_data.Rd_opt, 11);
+    std::vector<double> input(lf_data.Rd_opt.size());
+    for (size_t i = 0; i < lf_data.Rd_opt.size(); i++) {
+        input[i] = lf_data.Rd_opt[i];
+    }
+    std::vector<double> result = medfilt1(input, 11);
+
+    for (size_t i = 0; i < lf_data.Rd_opt.size(); i++) {
+        lf_data.Rd_opt[i] = result[i];
+    }
+
+
 
     smooth(lf_data.Rd_opt, 5);
 
@@ -1878,6 +1893,7 @@ double GetRd(const Param &params, const gsl::vector &source_signal,
         lf_data.Rd_opt[i] *= 0.5;
 
     }
+    std::cout << "********************* cost params *********************" << lf_data.Rd_opt << std::endl;
 
 //        Rd_opt->copy(lf_data.Rd_opt);
 
