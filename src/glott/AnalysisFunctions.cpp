@@ -1505,11 +1505,10 @@ gsl_matrix * RepMatVertAlloc(gsl_vector * v, size_t k) {
 
 double GetRd(const Param &params, const gsl::vector &source_signal,
              const gsl::vector_int &gci_inds, gsl::vector *Rd_opt) {
-    std::cout << "Rd analysis ";
 
 //    if (params.use_external_f0) {
-    std::cout << "using external F0 file: " << params.external_f0_filename
-              << " ...";
+//    std::cout << "using external F0 file: " << params.external_f0_filename
+//              << " ...";
 
     *Rd_opt = gsl::vector(gci_inds.size());
 
@@ -1985,9 +1984,7 @@ double GetRd(const Param &params, const gsl::vector &source_signal,
     // Printing the integer values of lf_data.prev
         for (size_t i = 0; i < nframe; ++i) {
             for (size_t j = 0; j < ncands; ++j) {
-                std::cout << gsl_matrix_int_get(prev, i, j) << " ";
             }
-            std::cout << std::endl;
         }
 
 
@@ -2017,13 +2014,14 @@ double GetRd(const Param &params, const gsl::vector &source_signal,
     }
 
 //        Rd_opt->copy(lf_data.Rd_opt);
-    std::cout << "********************* cost params *********************" << lf_data.Rd_opt << std::endl;
 
     for (size_t i = 0; i < lf_data.Rd_opt.size(); i++) {
         (*Rd_opt)(i) = lf_data.Rd_opt[i];
 
     }
 //        *Rd_opt(0) = lf_data.Rd_opt;
+//    std::cout << "********************* cost params *********************" << lf_data.Rd_opt << std::endl;
+    std::cout << "LF Rd analysis done.\n";
 
     return EXIT_SUCCESS;
 }
