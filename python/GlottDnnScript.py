@@ -39,10 +39,11 @@ def write_dnn_infofile():
     # write feature orders 
     # noinspection PyInterpreter
     f.write('F0_ORDER = ' + str(conf.input_dims[0]) + ';\n')
-    f.write('GAIN_ORDER = ' + str(conf.input_dims[1]) + ';\n')
-    f.write('HNR_ORDER = ' + str(conf.input_dims[2]) + ';\n')
-    f.write('LPC_ORDER_GLOT = ' + str(conf.input_dims[3]) + ';\n')
-    f.write('LPC_ORDER_VT = ' + str(conf.input_dims[4]) + ';\n')
+    # f.write('GAIN_ORDER = ' + str(conf.input_dims[1]) + ';\n')
+    # f.write('HNR_ORDER = ' + str(conf.input_dims[2]) + ';\n')
+    # f.write('LPC_ORDER_GLOT = ' + str(conf.input_dims[3]) + ';\n')
+    # f.write('LPC_ORDER_VT = ' + str(conf.input_dims[4]) + ';\n')
+    # f.write('rd = ' + str(conf.input_dims[5]) + ';\n')
     f.write('SAMPLING_FREQUENCY = ' + str(conf.sampling_frequency) + ';\n')
     f.write('WARPING_LAMBDA_VT = ' + str(conf.warping_lambda) + ';\n')
     f.close()
@@ -52,7 +53,7 @@ def mkdir_p(dirpath):
         os.makedirs(dirpath)
 
 def make_directories():
-    # Prepare environment 
+    # Prepare environment
     dirs = ['wav',
             'raw',
             'gci',
@@ -207,27 +208,26 @@ def glott_vocoder_synthesis():
                 #print cmd
                 os.system(cmd)
 
-
 def package_data():
     # read and shuffle wav filelist
-    wavscp = conf.datadir + '/scp/wav.scp' 
+    wavscp = conf.datadir + '/scp/wav.scp'
     with open(wavscp,'r') as wavfiles:
-        filelist = wavfiles.read().splitlines()    
+        filelist = wavfiles.read().splitlines()
     random.shuffle(filelist)
-    
+
     if conf.max_number_of_files < len(filelist):
         filelist = filelist[0:conf.max_number_of_files]
 
     # initialize global min and max
     in_min = 9999*np.ones([1,sum(conf.input_dims)],dtype=np.float32)
-    in_max = -9999*np.ones([1,sum(conf.input_dims)],dtype=np.float32)    
-    
+    in_max = -9999*np.ones([1,sum(conf.input_dims)],dtype=np.float32)
+
     n_frames = np.zeros([len(filelist)], dtype='int')
     for file_idx, wavfile in enumerate(filelist):
         if os.path.isfile(wavfile):
             bname = os.path.splitext(os.path.basename(wavfile))[0]
-            print (bname)
-            f0_file = conf.datadir + '/f0/' + bname + '.f0' 
+            # print (bname)
+            f0_file = conf.datadir + '/f0/' + bname + '.f0'
             n_frames[file_idx] = (np.fromfile(f0_file, dtype=np.float32, count=-1, sep='')).shape[0]
             # allocate file data
             input_data = np.empty([n_frames[file_idx], sum(conf.input_dims)], dtype=np.float32)
@@ -235,34 +235,40 @@ def package_data():
             for (ftype, ext, dim) in zip( conf.inputs, conf.input_exts, conf.input_dims):
                 if dim > 0:
                     # read feat  data
+                    # print(ftype)
                     feat_file = conf.datadir + '/'+ ftype + '/' + bname + ext
                     feat = np.fromfile(feat_file, dtype=np.float32, count=-1, sep='')
                     # check length is multiple of feature dimension
-                    assert len(feat) % dim == 0, \
-                        " Length mismatch for " + ftype
-                    # reshape
+                    # print(feat)
+                    # print(dim)
+                    # assert len(feat) % dim == 0, \
+                    #     " Length mismatch for " + ftype
+                    # # reshape
                     feat = np.reshape(feat, (-1,dim))
                     # set to input data matrix
-                    print(feat_file)
-                    print(feat.shape)
-                    try:
-                        input_data[:,feat_start:feat_start+dim ] = feat
-                    except ValueError as e:
-                        print("Error reading " + feat_file)
-                        print("Check that the feature sizes match between vocoder and python configs")
-                        raise e
-
-                    feat_start += dim
-            # remove unvoiced frames if requested
-            if conf.remove_unvoiced_frames:
-                input_data = input_data[input_data[:,0] > 0,:]
-            # update global min and max    
+                    print("feat", feat)
+                    print("feat.shape",feat.shape)
+                    # print(input_data[:,feat_start:feat_start+dim ])
+                    print("feat_start", feat_start)
+                    print("dim", dim)
+                    print("feat_start+dim", feat_start+dim)
+                # try:
+                #     input_data[:,feat_start:feat_start+dim ] = feat
+                # except ValueError as e:
+                #     print("Error reading " + feat_file)
+                #     print("Check that the feature sizes match between vocoder and python configs")
+                #     raise e
+                #     feat_start += dim
+            # # remove unvoiced frames if requested
+            # if remove_unvoiced_frames:
+            #     input_data = input_data[input_data[:,0] > 0,:]
+            # update global min and max
             in_min = np.minimum(np.amin(input_data, axis=0), in_min)
             in_max = np.maximum(np.amax(input_data, axis=0), in_max)
 
     new_min = 0.1
     new_max = 0.9
-    
+
     n_val = round(conf.validation_ratio * len(filelist))
     n_test = round(conf.test_ratio * len(filelist))
     n_train = len(filelist) - n_val - n_test
@@ -276,61 +282,74 @@ def package_data():
     set_index = 0
     in_fid = open(conf.train_data_dir + '/' + conf.dnn_name + '.' + set_name[set_index] + '.idat' ,'w')
     out_fid = open(conf.train_data_dir + '/' + conf.dnn_name + '.' + set_name[set_index] + '.odat' ,'w')
-                        
+
     for file_idx, wavfile in enumerate(filelist):
 
         if set_file_counter > set_sizes[set_index]:
             set_file_counter = 1
             set_index += 1
             in_fid.close()
-            out_fid.close()            
+            out_fid.close()
             if set_sizes[set_index] == 0:
                 set_index += 1
                 continue
             else:
                 in_fid = open(conf.train_data_dir + '/' + conf.dnn_name + '.' + set_name[set_index] + '.idat' ,'w')
                 out_fid = open(conf.train_data_dir + '/' + conf.dnn_name + '.' + set_name[set_index] + '.odat' ,'w')
-            
+
         if os.path.isfile(wavfile):
-            bname = os.path.splitext(os.path.basename(wavfile))[0]                
+            bname = os.path.splitext(os.path.basename(wavfile))[0]
+
             # allocate input and output data
             input_data = np.empty([n_frames[file_idx], sum(conf.input_dims)], dtype=np.float32)
             output_data = np.empty([n_frames[file_idx], sum(conf.output_dims)], dtype=np.float32)
-   
             # read input data
             feat_start = 0
-            for (ftype, ext, dim) in zip( conf.inputs, conf.input_exts, conf.input_dims):
+            for (ftype, ext, dim) in zip(conf.inputs, conf.input_exts, conf.input_dims):
                 if dim > 0:
-                    feat_file = conf.datadir + '/'+ ftype + '/' + bname + ext
+                    feat_file = conf.datadir + '/' + ftype + '/' + bname + ext
                     feat = np.fromfile(feat_file, dtype=np.float32, count=-1, sep='')
-                    feat = np.reshape(feat, (-1,dim))
-                    input_data[:,feat_start:feat_start+dim ] = feat
+                    feat = np.reshape(feat, (-1, dim))
+
+                    if feat.shape[0] > input_data.shape[0]:
+                        print("Error reading " + feat_file)
+                        print("Check that the feature sizes match between vocoder and python configs")
+                        continue
+                    else:
+                        input_data[:feat.shape[0], feat_start:feat_start+dim] = feat
+
                     feat_start += dim
 
-            # read output data
             feat_start = 0
-            for (ftype, ext, dim) in zip( conf.outputs, conf.output_exts, conf.output_dims): 
+            for (ftype, ext, dim) in zip(conf.outputs, conf.output_exts, conf.output_dims):
                 if dim > 0:
-                    feat_file = conf.datadir + '/'+ ftype + '/' + bname + ext
+                    feat_file = conf.datadir + '/' + ftype + '/' + bname + ext
                     feat = np.fromfile(feat_file, dtype=np.float32, count=-1, sep='')
-                    feat = np.reshape(feat, (-1,dim))
-                    output_data[:,feat_start:feat_start+dim ] = feat
+                    feat = np.reshape(feat, (-1, dim))
+
+                    if feat.shape[0] > output_data.shape[0]:
+                        print("Error reading " + feat_file)
+                        print("Check that the feature sizes match between vocoder and python configs")
+                        continue
+                    else:
+                        output_data[:feat.shape[0], feat_start:feat_start+dim] = feat
+
                     feat_start += dim
-            
-            # remove unvoiced frames if requested
-            if conf.remove_unvoiced_frames:
-                output_data = output_data[input_data[:,0] > 0,:]
-                input_data = input_data[input_data[:,0] > 0,:]
-            
+
+            # # remove unvoiced frames if requested
+            # if remove_unvoiced_frames:
+            #     output_data = output_data[input_data[:,0] > 0,:]
+            #     input_data = input_data[input_data[:,0] > 0,:]
+
             # normalize and write input data
             input_data = (input_data - in_min) / (in_max - in_min) * (new_max - new_min) + new_min
             input_data.astype(np.float32).tofile(in_fid, sep='',format="%f")
-            
+
             # write output data
             output_data.astype(np.float32).tofile(out_fid, sep='',format="%f")
 
             set_file_counter += 1
-            
+
     # close files
     in_fid.close()
     out_fid.close()
@@ -360,8 +379,8 @@ def main(argv):
         sptk_pitch_analysis()
     
     # GlottDNN Analysis
-    if conf.do_glott_vocoder_analysis:
-        glott_vocoder_analysis()
+    # if conf.do_glott_vocoder_analysis:
+    #     glott_vocoder_analysis()
 
     # Package data for DNN training
     if conf.make_dnn_train_data:
