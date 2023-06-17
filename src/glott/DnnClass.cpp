@@ -78,6 +78,7 @@ DnnParams::DnnParams() {
    f0_order= 0;
    gain_order= 0;
    hnr_order= 0;
+   rd_order= 0;
    warping_lambda_vt = 0.0;
    fs= 0;
 }
@@ -90,6 +91,7 @@ size_t DnnParams::getInputDimension() {
      input_dim += hnr_order;
      input_dim += f0_order;
      input_dim += gain_order;
+     input_dim += rd_order;
 
      return input_dim;
 }
@@ -148,6 +150,11 @@ void Dnn::setInput(const SynthesisData &data, const size_t &frame_index) {
    if (this->input_params.gain_order > 0)
       for (i=0;i<input_params.gain_order;i++)
          input_matrix(ind++,0) = data.frame_energy(frame_index);
+
+    //rd
+    if (this->input_params.rd_order > 0)
+        for (i=0;i<input_params.rd_order;i++)
+            input_matrix(ind++,0) = data.frame_energy(frame_index);
 
    //hnr
    if (this->input_params.hnr_order > 0) {
@@ -244,6 +251,7 @@ int Dnn::ReadInfo(const char *basename) {
    ConfigLookupInt("HNR_ORDER", cfg, false, &(input_params.hnr_order));
    ConfigLookupInt("F0_ORDER", cfg, false, &(input_params.f0_order));
    ConfigLookupInt("GAIN_ORDER", cfg, false, &(input_params.gain_order));
+   ConfigLookupInt("Rd_ORDER", cfg, false, &(input_params.rd_order));
    ConfigLookupInt("SAMPLING_FREQUENCY", cfg, false, &(input_params.fs));
    ConfigLookupDouble("WARPING_LAMBDA_VT", cfg, false, &(input_params.warping_lambda_vt));
 

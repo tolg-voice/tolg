@@ -39,11 +39,11 @@ def write_dnn_infofile():
     # write feature orders 
     # noinspection PyInterpreter
     f.write('F0_ORDER = ' + str(conf.input_dims[0]) + ';\n')
-    # f.write('GAIN_ORDER = ' + str(conf.input_dims[1]) + ';\n')
-    # f.write('HNR_ORDER = ' + str(conf.input_dims[2]) + ';\n')
-    # f.write('LPC_ORDER_GLOT = ' + str(conf.input_dims[3]) + ';\n')
-    # f.write('LPC_ORDER_VT = ' + str(conf.input_dims[4]) + ';\n')
-    # f.write('rd = ' + str(conf.input_dims[5]) + ';\n')
+    f.write('GAIN_ORDER = ' + str(conf.input_dims[1]) + ';\n')
+    f.write('HNR_ORDER = ' + str(conf.input_dims[2]) + ';\n')
+    f.write('LPC_ORDER_GLOT = ' + str(conf.input_dims[3]) + ';\n')
+    f.write('LPC_ORDER_VT = ' + str(conf.input_dims[4]) + ';\n')
+    f.write('Rd_ORDER = ' + str(conf.input_dims[5]) + ';\n')
     f.write('SAMPLING_FREQUENCY = ' + str(conf.sampling_frequency) + ';\n')
     f.write('WARPING_LAMBDA_VT = ' + str(conf.warping_lambda) + ';\n')
     f.close()
@@ -246,12 +246,7 @@ def package_data():
                     # # reshape
                     feat = np.reshape(feat, (-1,dim))
                     # set to input data matrix
-                    print("feat", feat)
-                    print("feat.shape",feat.shape)
-                    # print(input_data[:,feat_start:feat_start+dim ])
-                    print("feat_start", feat_start)
-                    print("dim", dim)
-                    print("feat_start+dim", feat_start+dim)
+
                 # try:
                 #     input_data[:,feat_start:feat_start+dim ] = feat
                 # except ValueError as e:

@@ -49,6 +49,7 @@ struct DnnParams {
    int f0_order;
    int gain_order;
    int hnr_order;
+   int rd_order;
    double warping_lambda_vt;
    int fs;
 
