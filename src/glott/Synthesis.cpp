@@ -105,8 +105,10 @@ int main(int argc, char *argv[]) {
    /* FFT based filtering includes spectral matching */ 
    FftFilterExcitation(params, data, &(data.signal)); 
    GenerateUnvoicedSignal(params, data, &(data.signal));
-   
-   std::string out_fname;
+
+//   std::cout << "********************* cost params *********************" << data.Rd_opt << std::endl;
+
+    std::string out_fname;
    out_fname = GetParamPath("exc", ".exc.wav", params.dir_exc, params);
    if(WriteWavFile(out_fname, data.excitation_signal, params.fs) == EXIT_FAILURE)
        return EXIT_FAILURE;

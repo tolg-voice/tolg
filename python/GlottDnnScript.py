@@ -374,8 +374,8 @@ def main(argv):
         sptk_pitch_analysis()
     
     # GlottDNN Analysis
-    # if conf.do_glott_vocoder_analysis:
-    #     glott_vocoder_analysis()
+    if conf.do_glott_vocoder_analysis:
+        glott_vocoder_analysis()
 
     # Package data for DNN training
     if conf.make_dnn_train_data:

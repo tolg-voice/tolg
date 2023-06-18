@@ -2019,7 +2019,7 @@ double GetRd(const Param &params, const gsl::vector &source_signal,
 
     }
 
-//        Rd_opt->copy(lf_data.Rd_opt);
+
 
     for (size_t i = 0; i < lf_data.Rd_opt.size(); i++) {
         (*Rd_opt)(i) = lf_data.Rd_opt[i];

@@ -206,8 +206,9 @@ public:
    gsl::matrix hnr_glot;
    
    gsl::matrix spectrum;
-   
-   /* QMF analysis specific */
+   gsl::vector Rd_opt;
+
+    /* QMF analysis specific */
    //gsl::matrix lsf_vt_qmf1;
    //gsl::matrix lsf_vt_qmf2;
    //gsl::vector gain_qmf;

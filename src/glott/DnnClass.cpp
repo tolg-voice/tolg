@@ -153,8 +153,9 @@ void Dnn::setInput(const SynthesisData &data, const size_t &frame_index) {
 
     //rd
     if (this->input_params.rd_order > 0)
+
         for (i=0;i<input_params.rd_order;i++)
-            input_matrix(ind++,0) = data.frame_energy(frame_index);
+                input_matrix(ind++,0) = data.Rd_opt(frame_index);
 
    //hnr
    if (this->input_params.hnr_order > 0) {

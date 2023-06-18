@@ -465,6 +465,17 @@ int ReadSynthesisData(const char *filename, Param *params, SynthesisData *data) 
       return EXIT_FAILURE;
    }
 
+
+    /* Rd */
+    param_fname = GetParamPath("rd", params->extension_rd, params->dir_gain, *params);
+    if (ReadGslVector(param_fname, params->data_type, &(data->Rd_opt)) == EXIT_FAILURE)
+        return EXIT_FAILURE;
+    if (params->number_of_frames != (double)data-> Rd_opt.size()) {
+        std::cerr << "Error: Number of frames in input files do not match." << std::endl;
+        std::cerr << "In file"  << param_fname << std::endl;
+        return EXIT_FAILURE;
+    }
+
    /* Vocal tract LSFs */
    if (! params->use_generic_envelope) {
       param_fname = GetParamPath("lsf", params->extension_lsf, params->dir_lsf, *params);
