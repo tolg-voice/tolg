@@ -44,10 +44,10 @@
 //#include "medfilt1.h"
 
 // Add the Reaper
-#include "core/file_resource.h"
-#include "core/track.h"
-#include "epoch_tracker/epoch_tracker.h"
-#include "wave/wave.h"
+//#include "core/file_resource.h"
+//#include "core/track.h"
+//#include "epoch_tracker/epoch_tracker.h"
+//#include "wave/wave.h"
 
 int PULSE_NOT_FOUND = -1;
 
