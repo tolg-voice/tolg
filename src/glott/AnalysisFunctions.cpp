@@ -2026,7 +2026,7 @@ double GetRd(const Param &params, const gsl::vector &source_signal,
 
     }
 //        *Rd_opt(0) = lf_data.Rd_opt;
-//    std::cout << "********************* cost params *********************" << lf_data.Rd_opt << std::endl;
+    std::cout << "********************* cost params *********************" << lf_data.Rd_opt << std::endl;
     std::cout << "LF Rd analysis done.\n";
 
     return EXIT_SUCCESS;

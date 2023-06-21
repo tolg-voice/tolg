@@ -151,12 +151,12 @@ void PrintTrack(const Track& track) {
     for (int i = 0; i < track.num_frames(); ++i) {
 //        std::cout << "Time: " << track.t(i) << " ";
 //        std::cout << "Voicing: " << track.v(i) << std::endl;
-        std::cout << "Voicing: " << track.a(i) << std::endl;
+//        std::cout << "F0: " << track.a(i) << std::endl;
 
-//        if (track.v(i) == 1) {
-//            double timeInSeconds = track.t(i) * 16000.0;
-//            std::cout << timeInSeconds << std::endl;
-//        }
+        if (track.v(i) == 1) {
+            double GCI_val = track.t(i) * 16000.0;
+            std::cout << GCI_val << std::endl;
+        }
     }
 }
 
@@ -245,12 +245,110 @@ int main(int argc, char *argv[]) {
    /* Convert glottal source AR polynomials to LSF */
    Poly2Lsf(data.poly_glot, &(data.lsf_glot));
 
-   /* start to do the Rd param extraction */
-   GetRd(params, data.source_signal, data.gci_inds, &(data.Rd_opt));
+
 
 //    std::cout << "********************* cost params *********************" << data.gci_inds << std::endl;
 
-   /* Write analyzed features to files */
+
+    int opt = 0;
+    std::string filename;
+    std::string f0_output;
+    std::string pm_output;
+    std::string corr_output;
+    bool do_hilbert_transform = kDoHilbertTransform;
+    bool do_high_pass = kDoHighpass;
+    float external_frame_interval = kExternalFrameInterval;
+    float max_f0 = kMaxF0Search;
+    float min_f0 = kMinF0Search;
+    float inter_pulse = kUnvoicedPulseInterval;
+    float unvoiced_cost = kUnvoicedCost;
+    bool ascii = false;
+    std::string debug_output;
+
+
+    filename = "./slt_arctic_a0002.wav";
+    f0_output = "./arctic_a0001.f0";
+    pm_output = "./arctic_a0001.pm";
+    // Load input.
+    Wave wav;
+    if (!wav.Load(filename)) {
+        fprintf(stderr, "Failed to load waveform '%s'\n", filename.c_str());
+        return 1;
+    }
+
+    EpochTracker et;
+    et.set_unvoiced_cost(unvoiced_cost);
+    int16_t* wave_datap = const_cast<int16_t *>(wav.data()->data());
+    int32_t n_samples = wav.num_samples();
+    float sample_rate = wav.sample_rate();
+    if (!et.Init(wave_datap, n_samples, sample_rate,
+                 min_f0, max_f0, do_high_pass, do_hilbert_transform)) {
+        return 1;
+    }
+    if (!debug_output.empty()) {
+        et.set_debug_name(debug_output);
+    }
+    // Compute f0 and pitchmarks.
+    Track *f0 = NULL;
+    Track *pm = NULL;
+    Track *corr = NULL;
+    if (!ComputeEpochsAndF0(et, inter_pulse, external_frame_interval, &pm, &f0, &corr)) {
+        fprintf(stderr, "Failed to compute epochs\n");
+        return 1;
+    }
+
+    // Print f0 track
+//    if (f0 != nullptr) {
+//        PrintTrack(*f0);
+//    } else {
+//        std::cerr << "F0 track is null" << std::endl;
+//    }
+
+    std::vector<double> GCI_Reaper;
+    if (f0 != nullptr) {
+        const Track& track = *f0;
+        for (int i = 0; i < track.num_frames(); ++i) {
+            if (track.v(i) == 1) {
+                int GCI_val = track.t(i) * 16000.0;
+                std::cout << GCI_val << std::endl;
+                GCI_Reaper.push_back(GCI_val); // Insert GCI_val into GCI_Reaper vector
+            }
+        }
+    } else {
+        std::cerr << "F0 track is null" << std::endl;
+    }
+
+
+    // Convert GCI_Reaper to gsl::vector
+    data.GCI_Reaper_gsl.resize(GCI_Reaper.size());
+    for (size_t i = 0; i < GCI_Reaper.size(); ++i) {
+        data.GCI_Reaper_gsl[i] = GCI_Reaper[i];
+    }
+//    gsl::vector GCI_Reaper;
+//
+//    if (f0 != nullptr) {
+//        const Track& track = *f0;
+//        GCI_Reaper.resize(track.num_frames()); // Resize GCI_Reaper vector
+//
+////        int index = 0;
+//        for (int i = 0; i < track.num_frames(); ++i) {
+//            if (track.v(i) == 1) {
+//                int GCI_val = track.t(i) * 16000;
+//                GCI_Reaper[i] = GCI_val; // Assign GCI_val to element at index
+////                ++index;
+//            }
+//        }
+//    } else {
+//        std::cerr << "F0 track is null" << std::endl;
+//    }
+
+    /* start to do the Rd param extraction */
+   GetRd(params, data.source_signal, data.GCI_Reaper_gsl, &(data.Rd_opt));
+
+
+//    std::cout << "********************* cost params *********************" << data.GCI_Reaper_gsl << std::endl;
+
+    /* Write analyzed features to files */
    data.SaveData(params);
 
 

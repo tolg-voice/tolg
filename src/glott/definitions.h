@@ -178,8 +178,9 @@ public:
 	gsl::matrix lsf_glot;
 	gsl::matrix excitation_pulses;
    gsl::matrix hnr_glot;
-
     gsl::vector Rd_opt;
+
+    gsl::vector GCI_Reaper_gsl;
 
 	/* QMF analysis specific */
 	//gsl::matrix lsf_vt_qmf1;
