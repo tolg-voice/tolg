@@ -29,7 +29,7 @@ use_external_gci = False
 # Neural net input params
 inputs = ['f0', 'gain', 'hnr', 'slsf', 'lsf', 'rd']
 input_exts = ['.f0', '.gain', '.hnr', '.slsf','.lsf', '.rd']
-input_dims = [1, 1, 5, 10, 30, 0] # set feature to zero if not used
+input_dims = [1, 1, 5, 10, 30, 1] # set feature to zero if not used
 
 
 # inputs = ['f0','rd', 'gain', 'hnr']

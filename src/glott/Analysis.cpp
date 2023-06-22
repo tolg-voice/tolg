@@ -377,12 +377,17 @@ int main(int argc, char *argv[]) {
    GetRd(params, data.source_signal, data.GCI_Reaper_gsl, &(data.Rd_opt_temp), &(data.EE));
 
     data.Rd_opt.resize(data.fundf.size());
-    data.Rd_opt.set_zero();
+//    data.Rd_opt.set_zero();
+//
+//    // Assuming data.Rd_opt_temp and data.Rd_opt are gsl::vector objects
+//    gsl::vector aligned_vector;
+//
+//    for (int i = 0; i < data.Rd_opt_temp.size(); ++i) {
+//        data.Rd_opt[i] = data.Rd_opt_temp[i];
+//    }
 
-    for (int i = 0; i < data.Rd_opt_temp.size(); ++i) {
-        data.Rd_opt[i] = data.Rd_opt_temp[i];
-    }
 
+    InterpolateLinear(data.Rd_opt_temp, data.Rd_opt.size(), &data.Rd_opt);
 
 
    data.Ra.resize(data.Rd_opt_temp.size());
@@ -422,6 +427,8 @@ int main(int argc, char *argv[]) {
 //    std::cout << "********************* cost params *********************" << data.GCI_Reaper_gsl << std::endl;
     std::cout << "********************* cost params *********************" << data.Rd_opt.size() << std::endl;
     std::cout << "********************* cost params *********************" << data.fundf.size() << std::endl;
+    std::cout << "********************* cost params *********************" << data.Rd_opt.size() << std::endl;
+    std::cout << "********************* cost params *********************" << data.Rd_opt << std::endl;
 
 //    std::cout << "********************* cost params *********************" << data.GCI_Reaper_gsl << std::endl;
 //    std::cout << "********************* cost params *********************" << data.F0_Reaper << std::endl;
