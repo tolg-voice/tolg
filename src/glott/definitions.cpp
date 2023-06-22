@@ -218,7 +218,24 @@ int AnalysisData::SaveData(const Param &params) {
         filename = GetParamPath("rd", params.extension_rd, params.dir_exc, params);
         WriteGslVector(filename, params.data_type, Rd_opt);
     }
+    filename = GetParamPath("ee", params.extension_ee, params.dir_ee, params);
+    WriteGslVector(filename, params.data_type, EE);
 
+    filename = GetParamPath("ra", params.extension_ra, params.dir_ra, params);
+    WriteGslVector(filename, params.data_type, Ra);
+
+    filename = GetParamPath("rk", params.extension_rk, params.dir_rk, params);
+    WriteGslVector(filename, params.data_type, Rk);
+
+    filename = GetParamPath("rg", params.extension_rg, params.dir_rg, params);
+    WriteGslVector(filename, params.data_type, Rg);
+
+    filename = GetParamPath("reaper_gci", params.extension_reaper_gci, params.dir_reaper_gci, params);
+    WriteGslVector(filename, params.data_type, GCI_Reaper_gsl);
+
+
+    filename = GetParamPath("reaper_f0", params.extension_reaper_f0, params.dir_reaper_f0, params);
+    WriteGslVector(filename, params.data_type, F0_Reaper_gsl);
 
    if (params.extract_original_signal) {
       filename = GetParamPath("exc", params.extension_wav, params.dir_exc, params);

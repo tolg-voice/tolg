@@ -136,6 +136,14 @@ struct Param
 	std::string dir_syn;
 	std::string dir_sp;
     std::string dir_gci;
+    std::string dir_ee;
+    std::string dir_ra;
+    std::string dir_rk;
+    std::string dir_rg;
+    std::string dir_reaper_gci;
+    std::string dir_reaper_f0;
+
+
 
 
     /* extensions for parameter types */
@@ -151,6 +159,13 @@ struct Param
 	std::string extension_wav;
     std::string extension_gci = ".gci";
     std::string extension_rd = ".rd";
+    std::string extension_ee = ".ee";
+    std::string extension_ra = ".ra";
+    std::string extension_rk = ".rk";
+    std::string extension_rg = ".rg";
+    std::string extension_reaper_gci = ".reaper_gci";
+    std::string extension_reaper_f0 = ".reaper_f0";
+
     std::string wav_filename;
 	std::string default_config_filename;
 	std::string user_config_filename;
@@ -181,6 +196,11 @@ public:
     gsl::vector Rd_opt;
 
     gsl::vector GCI_Reaper_gsl;
+    gsl::vector F0_Reaper_gsl;
+    gsl::vector EE;
+    gsl::vector Ra;
+    gsl::vector Rk;
+    gsl::vector Rg;
 
 	/* QMF analysis specific */
 	//gsl::matrix lsf_vt_qmf1;

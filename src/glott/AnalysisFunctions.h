@@ -30,9 +30,9 @@ int GetPitchSynchFrame(const Param &params, const gsl::vector &signal, const gsl
                         const int &frame_index, const int &frame_shift, const double &f0,
                         gsl::vector *frame, gsl::vector *pre_frame);
 
-double GetRd(const Param &params, const gsl::vector &source_signal, const gsl::vector_int &gci_inds, gsl::vector *Rd_opt);
+double GetRd(const Param &params, const gsl::vector &source_signal, const gsl::vector_int &gci_inds, gsl::vector *Rd_opt, gsl::vector *EE);
 
-
+void Rd2R(double Rd, double EE, double F0, double& Ra, double& Rk, double& Rg);
 
 
 #endif /* SRC_GLOTT_ANALYSISFUNCTIONS_H_ */

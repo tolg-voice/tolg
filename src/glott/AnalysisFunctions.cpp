@@ -1510,7 +1510,7 @@ gsl_matrix * RepMatVertAlloc(gsl_vector * v, size_t k) {
 
 
 double GetRd(const Param &params, const gsl::vector &source_signal,
-             const gsl::vector_int &gci_inds, gsl::vector *Rd_opt) {
+             const gsl::vector_int &gci_inds, gsl::vector *Rd_opt, gsl::vector *EE) {
 
 //    if (params.use_external_f0) {
 //    std::cout << "using external F0 file: " << params.external_f0_filename
@@ -1865,6 +1865,7 @@ double GetRd(const Param &params, const gsl::vector &source_signal,
                 // Transitions TO states in current frame
                 Rd2R(lf_data.Rd_n(n, c), lf_data.EE(n), lf_data.F0_cur, lf_data.Ra_try, lf_data.Rk_try, lf_data.Rg_try);
 
+//                std::cout << lf_data.Rg_try << std::endl;
 
                 lf_cont(lf_data.F0_cur, params.fs, lf_data.Ra_try, lf_data.Rk_try, lf_data.Rg_try, lf_data.EE(n), lf_data.LFpulse_cur);
 
@@ -2019,14 +2020,27 @@ double GetRd(const Param &params, const gsl::vector &source_signal,
 
     }
 
+    *Rd_opt = gsl::vector(gci_inds.size());
 
 
-    for (size_t i = 0; i < lf_data.Rd_opt.size(); i++) {
+    for (size_t i = 0; i < lf_data.EE.size(); i++) {
         (*Rd_opt)(i) = lf_data.Rd_opt[i];
 
     }
+
+    *EE = gsl::vector(gci_inds.size());
+
+
+    for (size_t i = 0; i < lf_data.EE.size(); i++) {
+        (*EE)(i) = lf_data.EE[i];
+
+    }
+
+
 //        *Rd_opt(0) = lf_data.Rd_opt;
-    std::cout << "********************* cost params *********************" << lf_data.Rd_opt << std::endl;
+//    std::cout << "********************* EE *********************" << lf_data.EE.size() << std::endl;
+//    std::cout << "********************* EE *********************" << lf_data.Rd_opt.size() << std::endl;
+
     std::cout << "LF Rd analysis done.\n";
 
     return EXIT_SUCCESS;

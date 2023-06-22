@@ -87,7 +87,13 @@
 #include "./reaper/epoch_tracker/epoch_tracker.h"
 #include "./reaper/wave/wave.h"
 
-
+//void Rd2R(double Rd, double EE, double F0, double& Ra, double& Rk, double& Rg) {
+//    Ra = (-1 + (4.8 * Rd)) / 100;
+//    Rk = (22.4 + (11.8 * Rd)) / 100;
+//    double EI = (M_PI * Rk * EE) / 2;
+//    double UP = (Rd * EE) / (10 * F0);
+//    Rg = EI / (F0 * UP * M_PI);
+//}
 
 Track* MakeEpochOutput(EpochTracker &et, float unvoiced_pm_interval) {
     std::vector<float> times;
@@ -251,7 +257,7 @@ int main(int argc, char *argv[]) {
 
 
     int opt = 0;
-    std::string filename;
+//    std::string filename;
     std::string f0_output;
     std::string pm_output;
     std::string corr_output;
@@ -265,8 +271,9 @@ int main(int argc, char *argv[]) {
     bool ascii = false;
     std::string debug_output;
 
+    std::string filename(wav_filename);
 
-    filename = "./slt_arctic_a0002.wav";
+//    filename = "./slt_arctic_a0004.wav";
     f0_output = "./arctic_a0001.f0";
     pm_output = "./arctic_a0001.pm";
     // Load input.
@@ -304,18 +311,41 @@ int main(int argc, char *argv[]) {
 //        std::cerr << "F0 track is null" << std::endl;
 //    }
 
+    std::vector<double> F0_Reaper;
+    if (f0 != nullptr) {
+        const Track& track = *f0;
+        for (int i = 0; i < track.num_frames(); ++i) {
+            if (track.a(i) != -1) {
+                double F0_val = track.a(i) ;
+//                std::cout << F0_val << std::endl;
+                F0_Reaper.push_back(F0_val); // Insert GCI_val into GCI_Reaper vector
+            }
+        }
+    } else {
+        std::cerr << "F0 track is null" << std::endl;
+    }
+
+
+    // Convert GCI_Reaper to gsl::vector
+    data.F0_Reaper_gsl.resize(F0_Reaper.size());
+    for (size_t i = 0; i < F0_Reaper.size(); ++i) {
+        data.F0_Reaper_gsl[i] = F0_Reaper[i];
+    }
+
+
+
     std::vector<double> GCI_Reaper;
     if (f0 != nullptr) {
         const Track& track = *f0;
         for (int i = 0; i < track.num_frames(); ++i) {
             if (track.v(i) == 1) {
                 int GCI_val = track.t(i) * 16000.0;
-                std::cout << GCI_val << std::endl;
+//                std::cout << GCI_val << std::endl;
                 GCI_Reaper.push_back(GCI_val); // Insert GCI_val into GCI_Reaper vector
             }
         }
     } else {
-        std::cerr << "F0 track is null" << std::endl;
+        std::cerr << "GCI track is null" << std::endl;
     }
 
 
@@ -343,10 +373,45 @@ int main(int argc, char *argv[]) {
 //    }
 
     /* start to do the Rd param extraction */
-   GetRd(params, data.source_signal, data.GCI_Reaper_gsl, &(data.Rd_opt));
+   GetRd(params, data.source_signal, data.GCI_Reaper_gsl, &(data.Rd_opt), &(data.EE));
+   data.Ra.resize(data.Rd_opt.size());
+   data.Rk.resize(data.Rd_opt.size());
+   data.Rg.resize(data.Rd_opt.size());
 
+
+
+
+    //void Rd2R(double Rd, double EE, double F0, double& Ra, double& Rk, double& Rg) {
+//    Ra = (-1 + (4.8 * Rd)) / 100;
+//    Rk = (22.4 + (11.8 * Rd)) / 100;
+//    double EI = (M_PI * Rk * EE) / 2;
+//    double UP = (Rd * EE) / (10 * F0);
+//    Rg = EI / (F0 * UP * M_PI);
+//}
+    double  Ra_cur;
+    double Rk_cur;
+    double Rg_cur;
+
+    for (size_t i = 0; i < data.Rd_opt.size(); ++i) {
+        Rd2R(data.Rd_opt(i), data.EE(i), data.F0_Reaper_gsl(i), Ra_cur, Rk_cur, Rg_cur);
+        data.Ra[i] = Ra_cur;
+        data.Rk[i] = Rk_cur;
+        data.Rg[i] = Rg_cur;
+
+//        Ra.push_back(Ra_cur); // Insert GCI_val into GCI_Reaper vector
+
+    }
+
+//    std::cout << "********************* cost params *********************" << data.Ra << std::endl;
+//    std::cout << "********************* cost params *********************" << data.Rk << std::endl;
+//    std::cout << "********************* cost params *********************" << data.Rg << std::endl;
+//
+//    std::cout << "********************* cost params *********************" << data.EE << std::endl;
+//    std::cout << "********************* cost params *********************" << data.GCI_Reaper_gsl << std::endl;
+//    std::cout << "********************* cost params *********************" << data.Rd_opt << std::endl;
 
 //    std::cout << "********************* cost params *********************" << data.GCI_Reaper_gsl << std::endl;
+//    std::cout << "********************* cost params *********************" << data.F0_Reaper << std::endl;
 
     /* Write analyzed features to files */
    data.SaveData(params);
