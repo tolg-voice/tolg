@@ -194,6 +194,7 @@ public:
 	gsl::matrix excitation_pulses;
    gsl::matrix hnr_glot;
     gsl::vector Rd_opt;
+    gsl::vector Rd_opt_temp;
 
     gsl::vector GCI_Reaper_gsl;
     gsl::vector F0_Reaper_gsl;

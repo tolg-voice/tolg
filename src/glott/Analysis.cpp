@@ -372,11 +372,22 @@ int main(int argc, char *argv[]) {
 //        std::cerr << "F0 track is null" << std::endl;
 //    }
 
+
     /* start to do the Rd param extraction */
-   GetRd(params, data.source_signal, data.GCI_Reaper_gsl, &(data.Rd_opt), &(data.EE));
-   data.Ra.resize(data.Rd_opt.size());
-   data.Rk.resize(data.Rd_opt.size());
-   data.Rg.resize(data.Rd_opt.size());
+   GetRd(params, data.source_signal, data.GCI_Reaper_gsl, &(data.Rd_opt_temp), &(data.EE));
+
+    data.Rd_opt.resize(data.fundf.size());
+    data.Rd_opt.set_zero();
+
+    for (int i = 0; i < data.Rd_opt_temp.size(); ++i) {
+        data.Rd_opt[i] = data.Rd_opt_temp[i];
+    }
+
+
+
+   data.Ra.resize(data.Rd_opt_temp.size());
+   data.Rk.resize(data.Rd_opt_temp.size());
+   data.Rg.resize(data.Rd_opt_temp.size());
 
 
 
@@ -392,8 +403,9 @@ int main(int argc, char *argv[]) {
     double Rk_cur;
     double Rg_cur;
 
-    for (size_t i = 0; i < data.Rd_opt.size(); ++i) {
-        Rd2R(data.Rd_opt(i), data.EE(i), data.F0_Reaper_gsl(i), Ra_cur, Rk_cur, Rg_cur);
+
+    for (size_t i = 0; i < data.Rd_opt_temp.size(); ++i) {
+        Rd2R(data.Rd_opt_temp(i), data.EE(i), data.F0_Reaper_gsl(i), Ra_cur, Rk_cur, Rg_cur);
         data.Ra[i] = Ra_cur;
         data.Rk[i] = Rk_cur;
         data.Rg[i] = Rg_cur;
@@ -408,7 +420,8 @@ int main(int argc, char *argv[]) {
 //
 //    std::cout << "********************* cost params *********************" << data.EE << std::endl;
 //    std::cout << "********************* cost params *********************" << data.GCI_Reaper_gsl << std::endl;
-//    std::cout << "********************* cost params *********************" << data.Rd_opt << std::endl;
+    std::cout << "********************* cost params *********************" << data.Rd_opt.size() << std::endl;
+    std::cout << "********************* cost params *********************" << data.fundf.size() << std::endl;
 
 //    std::cout << "********************* cost params *********************" << data.GCI_Reaper_gsl << std::endl;
 //    std::cout << "********************* cost params *********************" << data.F0_Reaper << std::endl;
