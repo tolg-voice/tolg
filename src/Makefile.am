@@ -28,7 +28,7 @@ Analysis_SOURCES = glott/Analysis.cpp Filters.h \
 					glott/AnalysisFunctions.h glott/AnalysisFunctions.cpp \
 					glott/Utils.h glott/Utils.cpp
 
-Analysis_LDADD = libgslwrap.a
+Analysis_LDADD = libgslwrap.a libcore.a libepoch_tracker.a libwave.a
 
 Synthesis_SOURCES = glott/Synthesis.cpp Filters.h \
 					glott/definitions.h glott/definitions.cpp \

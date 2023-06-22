@@ -124,7 +124,8 @@ am_Analysis_OBJECTS = glott/Analysis.$(OBJEXT) \
 	glott/QmfFunctions.$(OBJEXT) glott/PitchEstimation.$(OBJEXT) \
 	glott/AnalysisFunctions.$(OBJEXT) glott/Utils.$(OBJEXT)
 Analysis_OBJECTS = $(am_Analysis_OBJECTS)
-Analysis_DEPENDENCIES = libgslwrap.a
+Analysis_DEPENDENCIES = libgslwrap.a libcore.a libepoch_tracker.a \
+	libwave.a
 am_LsfPostFilter_OBJECTS = glott/LsfPostFilterMain.$(OBJEXT) \
 	glott/definitions.$(OBJEXT) glott/ReadConfig.$(OBJEXT) \
 	glott/FileIo.$(OBJEXT) glott/InverseFiltering.$(OBJEXT) \
@@ -349,7 +350,7 @@ Analysis_SOURCES = glott/Analysis.cpp Filters.h \
 					glott/AnalysisFunctions.h glott/AnalysisFunctions.cpp \
 					glott/Utils.h glott/Utils.cpp
 
-Analysis_LDADD = libgslwrap.a
+Analysis_LDADD = libgslwrap.a libcore.a libepoch_tracker.a libwave.a
 Synthesis_SOURCES = glott/Synthesis.cpp Filters.h \
 					glott/definitions.h glott/definitions.cpp \
 					glott/ReadConfig.h glott/ReadConfig.cpp \
