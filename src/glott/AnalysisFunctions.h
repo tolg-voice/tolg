@@ -27,11 +27,11 @@ void GetPulses(const Param &params, const gsl::vector &source_signal, const gsl:
 void GetIaifResidual(const Param &params, const gsl::vector &signal, gsl::vector *residual);
 void HnrAnalysis(const Param &params, const gsl::vector &source_signal, const gsl::vector &fundf, gsl::matrix *hnr_glott);
 int GetPitchSynchFrame(const Param &params, const gsl::vector &signal, const gsl::vector_int &gci_inds,
-                        const int &frame_index, const int &frame_shift, const double &f0,
-                        gsl::vector *frame, gsl::vector *pre_frame);
+                       const int &frame_index, const int &frame_shift, const double &f0,
+                       gsl::vector *frame, gsl::vector *pre_frame);
 
 double GetRd(const Param &params, const gsl::vector &source_signal, const gsl::vector_int &gci_inds, gsl::vector *Rd_opt, gsl::vector *EE);
-
+void lf_cont(double F0, double fs, double Ra, double Rk, double Rg, double EE, gsl::vector& g_LF);
 void Rd2R(double Rd, double EE, double F0, double& Ra, double& Rk, double& Rg);
 
 

@@ -94,6 +94,92 @@
 //    double UP = (Rd * EE) / (10 * F0);
 //    Rg = EI / (F0 * UP * M_PI);
 //}
+// Function to generate synthetic source signal
+gsl::vector integrat(const gsl::vector& x, double Fs) {
+    int length = x.size();
+    gsl::vector y(length);
+
+    double Ts = 1.0 / Fs;
+    y[0] = Ts * x[0];
+
+    for (int n = 1; n < length; ++n) {
+        y[n] = (Ts * x[n]) + y[n - 1];
+    }
+
+    return y;
+}
+
+
+gsl::vector generateSyntheticSignal(const gsl::vector& glot, const gsl::vector& GCI, const gsl::vector& F0,
+                                    const gsl::vector& Ra, const gsl::vector& Rk,
+                                    const gsl::vector& Rg, const gsl::vector& EE,
+                                    double fs, double F0min, double F0max, int maxCnt) {
+    int length = GCI.size();
+    gsl::vector sig(glot.size());
+    gsl::vector start(length);
+    gsl::vector finish(length);
+    gsl::vector UP(length);
+
+    for (int n = 0; n < length; ++n) {
+        if (F0[n] > F0min && F0[n] < F0max) {
+            gsl::vector pulse;
+            lf_cont(F0[n], fs, Ra[n], Rk[n], Rg[n], EE[n], pulse);
+
+            gsl::vector pulse_int = integrat(pulse, fs);
+            UP[n] = pulse_int.max();
+            int cnt = 1;
+
+//            std::vector<double> pulse_std(pulse.size());
+//            for (size_t i = 0; i < pulse.size(); ++i) {
+//                pulse_std[i] = pulse[i];
+//            }
+
+//            while (pulse.any() && cnt < maxCnt) {
+//                Rg[n] += 0.01;
+//                lf_cont(F0[n], fs, Ra[n], Rk[n], Rg[n], EE[n], pulse);
+//                cnt++;
+//            }
+//            while ((std::any_of(pulse_std.begin(), pulse_std.end(), [](double value) { return std::isnan(value); })) && cnt < maxCnt) {
+//                // Your code inside the loop
+////                Rg[n] += 0.01;
+////                lf_cont(F0[n], fs, Ra[n], Rk[n], Rg[n], EE[n], pulse);
+//                cnt++;
+//            }
+
+
+            if (cnt == maxCnt) {
+                pulse.resize(pulse.size());
+                pulse.set_zero();
+            }
+
+
+//            double minVal;
+//            size_t idx;
+//
+//
+//            pulse.min(&minVal, &idx);
+            double minVal = pulse[0];
+            size_t idx = 0;
+
+            for (size_t i = 1; i < pulse.size(); ++i) {
+                if (pulse[i] < minVal) {
+                    minVal = pulse[i];
+                    idx = i;
+                }
+            }
+
+            start[n] = GCI[n] - idx - 1;
+            finish[n] = start[n] + pulse.size() - 1;
+            if (start[n] > 0 && finish[n] < sig.size()) {
+                sig.subvector(start[n], finish[n] - start[n] + 1) += pulse;
+            }
+        }
+    }
+//    std::cout << "********************* cost params *********************" << sig << '\n';
+
+    return sig;
+}
+
 
 Track* MakeEpochOutput(EpochTracker &et, float unvoiced_pm_interval) {
     std::vector<float> times;
@@ -170,86 +256,73 @@ void PrintTrack(const Track& track) {
 
 int main(int argc, char *argv[]) {
 
-   if (CheckCommandLineAnalysis(argc) == EXIT_FAILURE) {
-      return EXIT_FAILURE;
-   }
+    if (CheckCommandLineAnalysis(argc) == EXIT_FAILURE) {
+        return EXIT_FAILURE;
+    }
 
-   const char *wav_filename = argv[1];
-   const char *default_config_filename = argv[2];
-   const char *user_config_filename = argv[3];
+    const char *wav_filename = argv[1];
+    const char *default_config_filename = argv[2];
+    const char *user_config_filename = argv[3];
 
-   /* Declare configuration parameter struct */
-   Param params;
+    /* Declare configuration parameter struct */
+    Param params;
 
-   /* Read configuration file */
-   if (ReadConfig(default_config_filename, true, &params) == EXIT_FAILURE)
-      return EXIT_FAILURE;
-   if (argc > 3) {
-      if (ReadConfig(user_config_filename, false, &params) == EXIT_FAILURE)
-         return EXIT_FAILURE;
-   }
+    /* Read configuration file */
+    if (ReadConfig(default_config_filename, true, &params) == EXIT_FAILURE)
+        return EXIT_FAILURE;
+    if (argc > 3) {
+        if (ReadConfig(user_config_filename, false, &params) == EXIT_FAILURE)
+            return EXIT_FAILURE;
+    }
 
-   /* Read sound file and allocate data */
-   AnalysisData data;
+    /* Read sound file and allocate data */
+    AnalysisData data;
 
-   if(ReadWavFile(wav_filename, &(data.signal), &params) == EXIT_FAILURE)
-      return EXIT_FAILURE;
+    if(ReadWavFile(wav_filename, &(data.signal), &params) == EXIT_FAILURE)
+        return EXIT_FAILURE;
 
-   data.AllocateData(params);
+    data.AllocateData(params);
 
-   /* High-pass filter signal to eliminate low frequency "rumble" */
-   HighPassFiltering(params, &(data.signal));
+    /* High-pass filter signal to eliminate low frequency "rumble" */
+    HighPassFiltering(params, &(data.signal));
 
-   if(!params.use_external_f0 || !params.use_external_gci || (params.signal_polarity == POLARITY_DETECT))
-      GetIaifResidual(params, data.signal, (&data.source_signal_iaif));
+    if(!params.use_external_f0 || !params.use_external_gci || (params.signal_polarity == POLARITY_DETECT))
+        GetIaifResidual(params, data.signal, (&data.source_signal_iaif));
 
-   /* Read or estimate signal polarity */
-   PolarityDetection(params, &(data.signal), &(data.source_signal_iaif));
+    /* Read or estimate signal polarity */
+    PolarityDetection(params, &(data.signal), &(data.source_signal_iaif));
 
-   /* Read or estimate fundamental frequency (F0)  */
-   if(GetF0(params, data.signal, data.source_signal_iaif, &(data.fundf)) == EXIT_FAILURE)
-      return EXIT_FAILURE;
+    /* Read or estimate fundamental frequency (F0)  */
+    if(GetF0(params, data.signal, data.source_signal_iaif, &(data.fundf)) == EXIT_FAILURE)
+        return EXIT_FAILURE;
 
-   /* Read or estimate glottal closure instants (GCIs)*/
-   GetGci(params, data.signal, data.source_signal_iaif, data.fundf, &(data.gci_inds));
+    /* Read or estimate glottal closure instants (GCIs)*/
+    GetGci(params, data.signal, data.source_signal_iaif, data.fundf, &(data.gci_inds));
 
-   /* Estimate frame log-energy (Gain) */
-   GetGain(params, data.fundf, data.signal, &(data.frame_energy));
+    /* Estimate frame log-energy (Gain) */
+    GetGain(params, data.fundf, data.signal, &(data.frame_energy));
 
-   /* Spectral analysis for vocal tract transfer function*/
-   if(params.qmf_subband_analysis) {
-      SpectralAnalysisQmf(params, data, &(data.poly_vocal_tract));
-   } else {
-      SpectralAnalysis(params, data, &(data.poly_vocal_tract));
-   }
+    /* Spectral analysis for vocal tract transfer function*/
+    if(params.qmf_subband_analysis) {
+        SpectralAnalysisQmf(params, data, &(data.poly_vocal_tract));
+    } else {
+        SpectralAnalysis(params, data, &(data.poly_vocal_tract));
+    }
 
-   /* Smooth vocal tract estimates in LSF domain */
-   Poly2Lsf(data.poly_vocal_tract, &data.lsf_vocal_tract);
-   MedianFilter(5, &data.lsf_vocal_tract);
-   MovingAverageFilter(3, &data.lsf_vocal_tract);
-   Lsf2Poly(data.lsf_vocal_tract, &data.poly_vocal_tract);
+    /* Smooth vocal tract estimates in LSF domain */
+    Poly2Lsf(data.poly_vocal_tract, &data.lsf_vocal_tract);
+    MedianFilter(5, &data.lsf_vocal_tract);
+    MovingAverageFilter(3, &data.lsf_vocal_tract);
+    Lsf2Poly(data.lsf_vocal_tract, &data.poly_vocal_tract);
 
-   /* Perform glottal inverse filtering with the estimated VT AR polynomials */
-   InverseFilter(params, data, &(data.poly_glot), &(data.source_signal));
+    /* Perform glottal inverse filtering with the estimated VT AR polynomials */
+    InverseFilter(params, data, &(data.poly_glot), &(data.source_signal));
 
-   /* Re-estimate GCIs on the residual */
-   //if(GetGci(params, data.signal, data.source_signal, data.fundf, &(data.gci_inds)) == EXIT_FAILURE)
-   //   return EXIT_FAILURE;
+    /* Re-estimate GCIs on the residual */
+    //if(GetGci(params, data.signal, data.source_signal, data.fundf, &(data.gci_inds)) == EXIT_FAILURE)
+    //   return EXIT_FAILURE;
 
-   /* Extract pitch synchronous (excitation) waveforms at each frame */
-   if (params.use_waveforms_directly) {
-      GetPulses(params, data.signal, data.gci_inds, data.fundf, &(data.excitation_pulses));
-   } else {
-      GetPulses(params, data.source_signal, data.gci_inds, data.fundf, &(data.excitation_pulses));
-   }
 
-   HnrAnalysis(params, data.source_signal, data.fundf, &(data.hnr_glot));
-
-   /* Convert vocal tract AR polynomials to LSF */
-   Poly2Lsf(data.poly_vocal_tract, &(data.lsf_vocal_tract));
-
-   /* Convert glottal source AR polynomials to LSF */
-   Poly2Lsf(data.poly_glot, &(data.lsf_glot));
 
 
 
@@ -374,7 +447,7 @@ int main(int argc, char *argv[]) {
 
 
     /* start to do the Rd param extraction */
-   GetRd(params, data.source_signal, data.GCI_Reaper_gsl, &(data.Rd_opt_temp), &(data.EE));
+    GetRd(params, data.source_signal, data.GCI_Reaper_gsl, &(data.Rd_opt_temp), &(data.EE));
 
     data.Rd_opt.resize(data.fundf.size());
 //    data.Rd_opt.set_zero();
@@ -390,9 +463,9 @@ int main(int argc, char *argv[]) {
     InterpolateLinear(data.Rd_opt_temp, data.Rd_opt.size(), &data.Rd_opt);
 
 
-   data.Ra.resize(data.Rd_opt_temp.size());
-   data.Rk.resize(data.Rd_opt_temp.size());
-   data.Rg.resize(data.Rd_opt_temp.size());
+    data.Ra.resize(data.Rd_opt_temp.size());
+    data.Rk.resize(data.Rd_opt_temp.size());
+    data.Rg.resize(data.Rd_opt_temp.size());
 
 
 
@@ -419,25 +492,55 @@ int main(int argc, char *argv[]) {
 
     }
 
+    gsl::vector LF_excitation_pulses;
+    LF_excitation_pulses.resize(data.source_signal.size());
+    LF_excitation_pulses = generateSyntheticSignal(data.source_signal, data.GCI_Reaper_gsl, data.F0_Reaper_gsl, data.Ra, data.Rk, data.Rg, data.EE, params.fs, params.f0_min, params.f0_max, 10);
+
+    std::string out_fname;
+
+    out_fname = GetParamPath("lf_pulse", ".lf_pulse.wav", params.dir_syn, params);
+//    std::cout << out_fname << std::endl;
+    if(WriteWavFile(out_fname, LF_excitation_pulses, params.fs) == EXIT_FAILURE)
+        return EXIT_FAILURE;
+
+
+
+    /* Extract pitch synchronous (excitation) waveforms at each frame */
+    if (params.use_waveforms_directly) {
+        GetPulses(params, data.signal, data.gci_inds, data.fundf, &(data.excitation_pulses));
+    } else {
+        GetPulses(params, data.source_signal, data.gci_inds, data.fundf, &(data.excitation_pulses));
+    }
+
+    HnrAnalysis(params, data.source_signal, data.fundf, &(data.hnr_glot));
+
+    /* Convert vocal tract AR polynomials to LSF */
+    Poly2Lsf(data.poly_vocal_tract, &(data.lsf_vocal_tract));
+
+    /* Convert glottal source AR polynomials to LSF */
+    Poly2Lsf(data.poly_glot, &(data.lsf_glot));
+
+
 //    std::cout << "********************* cost params *********************" << data.Ra << std::endl;
 //    std::cout << "********************* cost params *********************" << data.Rk << std::endl;
 //    std::cout << "********************* cost params *********************" << data.Rg << std::endl;
 //
 //    std::cout << "********************* cost params *********************" << data.EE << std::endl;
-//    std::cout << "********************* cost params *********************" << data.GCI_Reaper_gsl << std::endl;
-    std::cout << "********************* cost params *********************" << data.Rd_opt.size() << std::endl;
-    std::cout << "********************* cost params *********************" << data.fundf.size() << std::endl;
-    std::cout << "********************* cost params *********************" << data.Rd_opt.size() << std::endl;
-    std::cout << "********************* cost params *********************" << data.Rd_opt << std::endl;
+////    std::cout << "********************* cost params *********************" << data.GCI_Reaper_gsl << std::endl;
+//    std::cout << "********************* cost params *********************" << data.Rd_opt.size() << std::endl;
+//    std::cout << "********************* cost params *********************" << data.fundf.size() << std::endl;
+//    std::cout << "********************* cost params *********************" << data.Rd_opt.size() << std::endl;
+//    std::cout << "********************* cost params *********************" << data.excitation_pulses << '\n';
+//    std::cout << "********************* cost params *********************" << LF_excitation_pulses << '\n';
 
 //    std::cout << "********************* cost params *********************" << data.GCI_Reaper_gsl << std::endl;
 //    std::cout << "********************* cost params *********************" << data.F0_Reaper << std::endl;
 
     /* Write analyzed features to files */
-   data.SaveData(params);
+    data.SaveData(params);
 
 
-   return EXIT_SUCCESS;
+    return EXIT_SUCCESS;
 
 }
 
