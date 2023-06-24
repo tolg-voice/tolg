@@ -783,7 +783,7 @@ void GetPulses(const Param &params, const gsl::vector &source_signal,
 
         paf_pulse = replace_nan(paf_pulse);
 
-        std::cout << "********************* cost params *********************" << paf_pulse << std::endl;
+//        std::cout << "********************* cost params *********************" << paf_pulse << std::endl;
         /* Save to matrix */
         pulses_mat->set_col_vec(frame_index, paf_pulse);
     }

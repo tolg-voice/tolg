@@ -374,23 +374,23 @@ def main(argv):
         sptk_pitch_analysis()
     
     # GlottDNN Analysis
-    if conf.do_glott_vocoder_analysis:
-        glott_vocoder_analysis()
+    # if conf.do_glott_vocoder_analysis:
+    #     glott_vocoder_analysis()
 
     # Package data for DNN training
-    if conf.make_dnn_train_data:
-        package_data()
+    # if conf.make_dnn_train_data:
+    #     package_data()
         
     # Write Dnn infofile
-    if conf.make_dnn_infofile:
-        write_dnn_infofile()
+    # if conf.make_dnn_infofile:
+    #     write_dnn_infofile()
 
     # Train Dnn with torch
-    if conf.do_dnn_training:
-        dim_in = sum(conf.input_dims)
-        dim_out = sum(conf.output_dims)
-        TrainDnn.evaluate_dnn(n_in=dim_in, n_out=dim_out, n_hidden=conf.n_hidden, batch_size=conf.batch_size,
-                 learning_rate=conf.learning_rate, n_epochs = conf.max_epochs)
+    # if conf.do_dnn_training:
+    #     dim_in = sum(conf.input_dims)
+    #     dim_out = sum(conf.output_dims)
+    #     TrainDnn.evaluate_dnn(n_in=dim_in, n_out=dim_out, n_hidden=conf.n_hidden, batch_size=conf.batch_size,
+    #              learning_rate=conf.learning_rate, n_epochs = conf.max_epochs)
 
     # Copy-synthesis
     if conf.do_glott_vocoder_synthesis:
