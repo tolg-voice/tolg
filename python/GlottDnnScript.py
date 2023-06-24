@@ -389,7 +389,7 @@ def main(argv):
     if conf.do_dnn_training:
         dim_in = sum(conf.input_dims)
         dim_out = sum(conf.output_dims)
-        TrainDnn.evaluate_dnn(n_in=dim_in, n_out=dim_out, n_hidden=conf.n_hidden, batch_size=conf.batch_size, 
+        TrainDnn.evaluate_dnn(n_in=dim_in, n_out=dim_out, n_hidden=conf.n_hidden, batch_size=conf.batch_size,
                  learning_rate=conf.learning_rate, n_epochs = conf.max_epochs)
 
     # Copy-synthesis

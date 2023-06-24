@@ -202,6 +202,11 @@ public:
     gsl::vector Ra;
     gsl::vector Rk;
     gsl::vector Rg;
+    gsl::vector LF_excitation_pulses;
+    gsl::vector unvoiced;
+    gsl::vector EE_aligned;
+    gsl::vector spectrum;
+    gsl::vector excitation_signal;
 
 	/* QMF analysis specific */
 	//gsl::matrix lsf_vt_qmf1;

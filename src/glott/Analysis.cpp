@@ -87,6 +87,137 @@
 #include "./reaper/epoch_tracker/epoch_tracker.h"
 #include "./reaper/wave/wave.h"
 
+void GenerateUnvoicedSignal(const Param &params, const AnalysisData &data,
+                            gsl::vector *signal) {
+    /* When using pulses-as-features for unvoiced, unvoiced part is filtered as
+     * voiced */
+    /*
+    if ((params.use_paf_unvoiced_synthesis &&
+         params.excitation_method == PULSES_AS_FEATURES_EXCITATION) ||
+        params.use_external_excitation)
+    { return; }
+    */
+
+    if (params.use_paf_unvoiced_synthesis &&
+        params.excitation_method == PULSES_AS_FEATURES_EXCITATION) {
+        //std::cout << "skipping unvoiced excitation generation" << std::endl;
+        return;
+    }
+
+    //std::cout << "generating unvoiced" << std::endl;
+
+    gsl::vector uv_signal((*signal).size(), true);
+    gsl::vector noise_vec(params.frame_length_unvoiced);
+    gsl::random_generator rand_gen;
+    gsl::gaussian_random random_gauss_gen(rand_gen);
+
+    gsl::vector A(params.lpc_order_vt + 1, true);
+    gsl::vector A_tilt(params.lpc_order_glot + 1, true);
+
+    ComplexVector noise_vec_fft;
+
+    ComplexVector tilt_fft;
+    size_t NFFT = 4096;  // Long FFT
+    ComplexVector vt_fft(NFFT / 2 + 1);
+    gsl::vector fft_mag(NFFT / 2 + 1);
+    size_t i;
+
+    // for de-warping filters
+    gsl::vector impulse(params.frame_length);
+    gsl::vector imp_response(params.frame_length);
+    // gsl::vector impulse(NFFT);
+    // gsl::vector imp_response(NFFT);
+    gsl::vector b(1);
+    b(0) = 1.0;
+
+    /* Define analysis and synthesis window */
+    //double kbd_alpha = 2.3;
+    //gsl::vector kbd_window =
+    //    getKaiserBesselDerivedWindow(noise_vec.size(), kbd_alpha);
+
+    size_t frame_index;
+    for (frame_index = 0; frame_index < params.number_of_frames; frame_index++) {
+        if (data.fundf(frame_index) == 0) {
+
+
+            Lsf2Poly(data.lsf_vocal_tract.get_col_vec(frame_index), &A);
+            if (params.warping_lambda_vt == 0.0) {
+                FFTRadix2(A, NFFT, &vt_fft);
+            } else {
+                /* get warped filter linear frequency response via impulse response */
+                imp_response.set_zero();
+                impulse.set_zero();
+                impulse(0) = 1.0;
+                /* get inverse filter impulse response */
+                WFilter(A, b, impulse, params.warping_lambda_vt, &imp_response);
+                FFTRadix2(imp_response, NFFT, &vt_fft);
+            }
+
+            if (params.use_external_excitation) {
+                GetFrame(data.excitation_signal, frame_index,
+                         rint(params.frame_shift / params.speed_scale), &noise_vec, NULL);
+            } else {
+                for (i = 0; i < noise_vec.size(); i++) {
+                    noise_vec(i) = random_gauss_gen.get();
+                }
+            }
+
+
+            /* Cancel pre-emphasis if needed */
+            if (params.unvoiced_pre_emphasis_coefficient > 0.0) {
+                gsl::vector noise_vec_copy(noise_vec);
+                Filter(std::vector<double>{1.0},
+                       std::vector<double>{
+                               1.0, -1.0 * params.unvoiced_pre_emphasis_coefficient},
+                       noise_vec_copy, &noise_vec);
+            }
+
+            ApplyWindowingFunction(COSINE, &noise_vec);
+
+            FFTRadix2(noise_vec, NFFT, &noise_vec_fft);
+            Lsf2Poly(data.lsf_glot.get_col_vec(frame_index), &A_tilt);
+            FFTRadix2(A_tilt, NFFT, &tilt_fft);
+
+            // Randomize phase
+            double mag;
+            double ang;
+            for (i = 0; i < noise_vec_fft.getSize(); i++) {
+                if (params.use_generic_envelope) {
+                    mag = noise_vec_fft.getAbs(i) * vt_fft.getAbs(i);
+                } else if (!params.use_spectral_matching) {
+                    /* Only use vocal tract synthesis filter */
+                    mag = noise_vec_fft.getAbs(i) *
+                          GSL_MIN(1.0 / (vt_fft.getAbs(i)), 10000);
+                } else {
+                    /* Use both vocal tract and excitation LP envelope synthesis filters */
+                    mag = noise_vec_fft.getAbs(i) *
+                          GSL_MIN(1.0 / (vt_fft.getAbs(i)), 10000) *
+                          GSL_MIN(1.0 / tilt_fft.getAbs(i), 10000);
+                }
+                ang = noise_vec_fft.getAng(i);
+
+                noise_vec_fft.setReal(i, mag * cos(double(ang)));
+                noise_vec_fft.setImag(i, mag * sin(double(ang)));
+            }
+            double e_target;
+            e_target = LogEnergy2FrameEnergy(data.frame_energy(frame_index),
+                                             noise_vec.size());
+
+            IFFTRadix2(noise_vec_fft, &noise_vec);
+
+            ApplyWindowingFunction(COSINE, &noise_vec);
+            noise_vec *= params.noise_gain_unvoiced * e_target /
+                         getEnergy(noise_vec) / sqrt(2.0);
+
+            /* Normalize overlap-add window */
+            noise_vec /= 0.5 * (double)noise_vec.size() / (double)params.frame_shift;
+            OverlapAdd(noise_vec,
+                       frame_index * rint(params.frame_shift / params.speed_scale),
+                       &uv_signal);
+        }
+    }
+    (*signal) += uv_signal;
+}
 //void Rd2R(double Rd, double EE, double F0, double& Ra, double& Rk, double& Rg) {
 //    Ra = (-1 + (4.8 * Rd)) / 100;
 //    Rk = (22.4 + (11.8 * Rd)) / 100;
@@ -110,9 +241,34 @@ gsl::vector integrat(const gsl::vector& x, double Fs) {
 }
 
 
+
+gsl::vector contains_nan(const gsl::vector &x) {
+    gsl::vector x_logic;
+    x_logic.resize(x.size());
+    for (int32_t i = 0; i < x.size(); ++i) {
+        if (std::isnan(x[i])) {
+            x_logic[i] = 1;
+        }else{
+            x_logic[i] = 0;
+        }
+    }
+    return x_logic;
+}
+
+bool any_wrap(const gsl::vector &x) {
+    for (int32_t i = 0; i < x.size(); ++i) {
+        if (x[i] == 1) {
+            return true;
+        }
+    }
+    return false;
+}
+
+
+
 gsl::vector generateSyntheticSignal(const gsl::vector& glot, const gsl::vector& GCI, const gsl::vector& F0,
                                     const gsl::vector& Ra, const gsl::vector& Rk,
-                                    const gsl::vector& Rg, const gsl::vector& EE,
+                                    gsl::vector& Rg, const gsl::vector& EE,
                                     double fs, double F0min, double F0max, int maxCnt) {
     int length = GCI.size();
     gsl::vector sig(glot.size());
@@ -129,10 +285,26 @@ gsl::vector generateSyntheticSignal(const gsl::vector& glot, const gsl::vector& 
             UP[n] = pulse_int.max();
             int cnt = 1;
 
+
+//            gsl::vector Rg_copy = Rg; // Make a copy of the Rg vector for modification
+
+
 //            std::vector<double> pulse_std(pulse.size());
 //            for (size_t i = 0; i < pulse.size(); ++i) {
 //                pulse_std[i] = pulse[i];
 //            }
+            gsl::vector pulse_logic;
+            pulse_logic = contains_nan(pulse);
+
+            while (any_wrap(pulse_logic) && cnt < maxCnt) {
+                Rg[n] += 0.01; // Modify the copy of Rg
+                lf_cont(F0[n], fs, Ra[n], Rk[n], Rg[n], EE[n], pulse);
+                cnt++;
+            }
+
+//            Rg = Rg_copy; // Assign the modified Rg_copy back to the original Rg vector
+
+
 
 //            while (pulse.any() && cnt < maxCnt) {
 //                Rg[n] += 0.01;
@@ -175,7 +347,6 @@ gsl::vector generateSyntheticSignal(const gsl::vector& glot, const gsl::vector& 
             }
         }
     }
-//    std::cout << "********************* cost params *********************" << sig << '\n';
 
     return sig;
 }
@@ -461,11 +632,13 @@ int main(int argc, char *argv[]) {
 
 
     InterpolateLinear(data.Rd_opt_temp, data.Rd_opt.size(), &data.Rd_opt);
+    data.EE_aligned.resize(data.fundf.size());
+    InterpolateLinear(data.EE, data.Rd_opt.size(), &data.EE_aligned);
 
 
-    data.Ra.resize(data.Rd_opt_temp.size());
-    data.Rk.resize(data.Rd_opt_temp.size());
-    data.Rg.resize(data.Rd_opt_temp.size());
+    data.Ra.resize(data.Rd_opt.size());
+    data.Rk.resize(data.Rd_opt.size());
+    data.Rg.resize(data.Rd_opt.size());
 
 
 
@@ -482,8 +655,8 @@ int main(int argc, char *argv[]) {
     double Rg_cur;
 
 
-    for (size_t i = 0; i < data.Rd_opt_temp.size(); ++i) {
-        Rd2R(data.Rd_opt_temp(i), data.EE(i), data.F0_Reaper_gsl(i), Ra_cur, Rk_cur, Rg_cur);
+    for (size_t i = 0; i < data.Rd_opt.size(); ++i) {
+        Rd2R(data.Rd_opt(i), data.EE_aligned(i), data.fundf(i), Ra_cur, Rk_cur, Rg_cur);
         data.Ra[i] = Ra_cur;
         data.Rk[i] = Rk_cur;
         data.Rg[i] = Rg_cur;
@@ -492,25 +665,52 @@ int main(int argc, char *argv[]) {
 
     }
 
-    gsl::vector LF_excitation_pulses;
-    LF_excitation_pulses.resize(data.source_signal.size());
-    LF_excitation_pulses = generateSyntheticSignal(data.source_signal, data.GCI_Reaper_gsl, data.F0_Reaper_gsl, data.Ra, data.Rk, data.Rg, data.EE, params.fs, params.f0_min, params.f0_max, 10);
+    data.LF_excitation_pulses.resize(data.source_signal.size());
+    data.LF_excitation_pulses = generateSyntheticSignal(data.source_signal, data.gci_inds, data.fundf, data.Ra, data.Rk, data.Rg, data.EE_aligned, params.fs, params.f0_min, params.f0_max, 10);
+
+    data.unvoiced.resize(data.source_signal.size());
+
+
+
+
+
+
+
+//    /* FFT based filtering includes spectral matching */
+//    FftFilterExcitation(params, data, &(data.unvoiced));
+
+
+    GenerateUnvoicedSignal(params, data, &(data.unvoiced));
+//    std::cout << "********************* cost params *********************" << data.GCI_Reaper_gsl << std::endl;
+
+    for (size_t i = 0; i < data.LF_excitation_pulses.size(); ++i) {
+        data.LF_excitation_pulses[i] = data.unvoiced[i] + data.LF_excitation_pulses[i];
+//        Ra.push_back(Ra_cur); // Insert GCI_val into GCI_Reaper vector
+    }
 
     std::string out_fname;
 
+//    std::cout << "********************* cost params *********************" << LF_excitation_pulses.size() << '\n';
+//
+//    std::cout << "********************* cost params *********************" << data.unvoiced << '\n';
+
+
+
+
     out_fname = GetParamPath("lf_pulse", ".lf_pulse.wav", params.dir_syn, params);
 //    std::cout << out_fname << std::endl;
-    if(WriteWavFile(out_fname, LF_excitation_pulses, params.fs) == EXIT_FAILURE)
+    if(WriteWavFile(out_fname, data.LF_excitation_pulses, params.fs) == EXIT_FAILURE)
         return EXIT_FAILURE;
 
-
+//    out_fname = GetParamPath("unvoiced", ".unvoiced.wav", params.dir_syn, params);
+////    std::cout << out_fname << std::endl;
+//    if(WriteWavFile(out_fname, data.unvoiced, params.fs) == EXIT_FAILURE)
+//        return EXIT_FAILURE;
 
     /* Extract pitch synchronous (excitation) waveforms at each frame */
-    if (params.use_waveforms_directly) {
-        GetPulses(params, data.signal, data.gci_inds, data.fundf, &(data.excitation_pulses));
-    } else {
-        GetPulses(params, data.source_signal, data.gci_inds, data.fundf, &(data.excitation_pulses));
-    }
+
+    GetPulses(params, data.LF_excitation_pulses, data.gci_inds, data.fundf, &(data.excitation_pulses));
+
 
     HnrAnalysis(params, data.source_signal, data.fundf, &(data.hnr_glot));
 
@@ -526,7 +726,6 @@ int main(int argc, char *argv[]) {
 //    std::cout << "********************* cost params *********************" << data.Rg << std::endl;
 //
 //    std::cout << "********************* cost params *********************" << data.EE << std::endl;
-////    std::cout << "********************* cost params *********************" << data.GCI_Reaper_gsl << std::endl;
 //    std::cout << "********************* cost params *********************" << data.Rd_opt.size() << std::endl;
 //    std::cout << "********************* cost params *********************" << data.fundf.size() << std::endl;
 //    std::cout << "********************* cost params *********************" << data.Rd_opt.size() << std::endl;
