@@ -1,4 +1,11 @@
-# Tolg Vocoder
+# Tolg Vocoder: Neural LF glottal vocoder for generative source-filter speech synthesis and enhancemen
+
+
+<div align="center">
+  <img src="./img/logo.svg" width = "100%" height = "100%">
+</div>
+
+
 
 ## Read the Analysized file
 ```
