@@ -1,4 +1,4 @@
-# GlottDNN Vocoder
+# Tolg Vocoder
 
 ## Read the Analysized file
 ```
