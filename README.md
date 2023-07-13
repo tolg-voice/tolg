@@ -1,5 +1,9 @@
-# Tolg Vocoder: Neural LF glottal vocoder for generative source-filter speech synthesis and enhancemen
+# Tolg Vocoder: Neural LF glottal vocoder for generative source-filter speech synthesis and enhancement
 
+
+## Acknowledge
+The vocoder employed here is derived from GlottDNN, featuring the integration of the LF glottal vocoder.
+https://github.com/ljuvela/GlottDNN
 
 <div align="center">
   <img src="./img/logo.svg" width = "30%" height = "30%">
@@ -7,20 +11,7 @@
 
 
 
-## Read the Analysized file
-```
-x2x +fa slt_arctic_a0001.f0 > output.txt
-```
-Here is to convert an Asscii file into float number. 
-This is the analysis part:
-
-```
-./Analysis ../dnn_demo/data/wav/slt_arctic_a0001.wav ../dnn_demo/config_dnn_demo.cfg
-```
-
-
-
-The GlottDNN package contains two main parts:
+The Tolg package contains two main parts:
 
 1) The glottal vocoder written in C++
    - Dependencies: `libsndfile`, `libgsl`, `libconfig`
@@ -57,13 +48,13 @@ automake --add-missing
 
 ### Installation using a conda environment
 
-Conda environments are useful for managing dependencies and keeping a GlottDNN installation contained from the systemwide environment. For more information about managing conda enviroments, see https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html
+Conda environments are useful for managing dependencies and keeping a Tolg installation contained from the systemwide environment. For more information about managing conda enviroments, see https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html
 
 
 Create and activate a new conda environment. 
 ```bash
-conda create -n glottdnn
-conda activate glottdnn
+conda create -n Tolg
+conda activate Tolg
 ```
 
 Install dependencies
@@ -102,11 +93,80 @@ echo 'export LD_LIBRARY_PATH=${OLD_LD_LIBRARY_PATH}' > $DEACTIVATE_SCRIPT
 echo 'unset OLD_LD_LIBRARY_PATH' >> $DEACTIVATE_SCRIPT
 ```
 
-## Analysis-synthesis example
+
+## Easy to go all-in-one Example:
+
+```
+python3 ./python/GlottDnnScript.py ./dnn_demo/config_dnn_demo.py
+```
+The present version requires `pytorch>=1.1.0` and all `theano` dependencies have been removed.
+
+Note that the following is a toy example, since we now use only 10 audio files. This example is intended as a quick sanity check and can be easily run on a CPU. For more data and more complex models, a GPU is recommended.
 
 
+Before we run anything, you can modify the configuration files below:
+```
+./dnn_demo/config_dnn_demo.py
+```
+
+Then run the example script by saying
+``` bash
+python3 ./python/GlottDnnScript.py ./dnn_demo/config_dnn_demo.py
+```
+
+The demo script runs vocoder analysis, trains a DNN excitation model, and finally applies copy-synthesis to the samples.
+After running, the copy-synthesis results are stored in `./dnn_demo/data/syn` and the original wave files are in `./dnn_demo/data/wav`.
+
+
+Upon executing this example, the analyzed files can be located in the respective directories specified below, accompanied by their corresponding file extensions.
+
+The expected outcome should consist of the following files:
+
+```
+ls ./data/dnn_demo/data
+    /tolg/dnn_demo/data/ee
+    /tolg/dnn_demo/data/exc
+    /tolg/dnn_demo/data/f0
+    /tolg/dnn_demo/data/gain
+    /tolg/dnn_demo/data/gci
+    /tolg/dnn_demo/data/hnr
+    /tolg/dnn_demo/data/lf_pulse
+    /tolg/dnn_demo/data/pls
+    /tolg/dnn_demo/data/ra
+    /tolg/dnn_demo/data/rd
+    /tolg/dnn_demo/data/reaper_f0
+    /tolg/dnn_demo/data/reaper_gci
+    /tolg/dnn_demo/data/rg
+    /tolg/dnn_demo/data/rk
+    /tolg/dnn_demo/data/scp
+    /tolg/dnn_demo/data/slsf
+    /tolg/dnn_demo/data/syn
+    /tolg/dnn_demo/data/wav    
+```
+
+
+You can read the ```f0``` file by:
+
+
+```
+x2x +fa slt_arctic_a0001.f0 > output.txt
+```
+Here is to convert an Asscii file into float number.
+
+
+
+## One step analysis-synthesis example
 
 These examples assume 16kHz sampling rate audio. Other sampling rates are feasible, but you should change the config accordingly.  
+
+
+
+
+This is the analysis part:
+
+```
+./Analysis ../dnn_demo/data/wav/slt_arctic_a0001.wav ../dnn_demo/config_dnn_demo.cfg
+```
 
 
 Let's first get a wave file from the Arctic database
@@ -122,34 +182,15 @@ wget -O "$DATADIR/$BASENAME.wav" $URL
 
 ### Acoustic feature analysis
 
-Now run GlottDNN Analysis program with default configuration
+Now run Tolg Analysis program with default configuration
 ``` bash
 ./src/Analysis "$DATADIR/$BASENAME.wav" ./config/config_default_16k.cfg
 or
 ./src/Analysis "$DATADIR/$BASENAME.wav" ./src/config_default_16k.cfg
 
 ```
-You can change the ```f0``` file by:
-```ssh
-x2x +fa slt_arctic_a0001.f0 > output.txt
-```
 
 
-
-
-We should now have the following files 
-
-```
-ls ./data/tmp/ 
-
-    ./data/tmp/slt_arctic_a0001.gain
-    ./data/tmp/slt_arctic_a0001.lsf
-    ./data/tmp/slt_arctic_a0001.slsf
-    ./data/tmp/slt_arctic_a0001.hnr
-    ./data/tmp/slt_arctic_a0001.pls
-    ./data/tmp/slt_arctic_a0001.f0
-    ./data/tmp/slt_arctic_a0001.src.wav
-```
 
 ### Synthesis with single pulse excitation 
 
@@ -193,28 +234,6 @@ Of course the original pulses are not available in many applications (such as te
 
 ## Built-in neural net excitation model 
 
-The present version requires `pytorch>=1.1.0` and all `theano` dependencies have been removed.
-
-Note that the following is a toy example, since we now use only 10 audio files. This example is intended as a quick sanity check and can be easily run on a CPU. For more data and more complex models, a GPU is recommended.
-
-
-Let's first download some data
-```
-sh ./dnn_demo/get_data.sh
-```
-
-Before we run anything, have a look into
-```
-./dnn_demo/config_dnn_demo.py
-```
-
-Then run the example script by saying
-``` bash
-python3 ./python/GlottDnnScript.py ./dnn_demo/config_dnn_demo.py
-```
-
-The demo script runs vocoder analysis, trains a DNN excitation model, and finally applies copy-synthesis to the samples.
-After running, the copy-synthesis results are stored in `./dnn_demo/data/syn` and the original wave files are in `./dnn_demo/data/wav`.
 
 ### Python config contents
 Prepare a directory structure under and make file lists based on contents of the `wav` sub-directory
@@ -231,12 +250,12 @@ do_reaper_pitch_analysis = 0
 do_sptk_pitch_analysis = 0
 ```
 
-Use GlottDNN to extract glottal vocoder features and pulses for  excitation model training.
+Use Tolg to extract glottal vocoder features and pulses for  excitation model training.
 ``` python
 do_glott_vocoder_analysis = 1
 ```
 
-Package data and train an excitation model for GlottDNN, as supported by the internal implementation. Uses `theano` for training and only supports simple fully connected nets with least squares training.
+Package data and train an excitation model for Tolg, as supported by the internal implementation. Uses `theano` for training and only supports simple fully connected nets with least squares training.
 ``` python
 make_dnn_train_data = 1
 make_dnn_infofile = 1
@@ -263,11 +282,11 @@ do_glott_vocoder_synthesis = 1
 
 When in trouble, open an issue at GitHub. Others will likely have similar issues and it's best to solve them collectively
 
-https://github.com/ljuvela/GlottDNN/issues
+https://github.com/tolg-voice/tolg/issues
 
 For more examples and explanation, check the documentation in
 
-https://aalto-speech.github.io/GlottDNN/ 
+https://grabvoice.com/tlog
 
 ## Licence
 
