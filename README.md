@@ -2,14 +2,15 @@
 
 
 ## Acknowledge
-The vocoder employed here is derived from GlottDNN, featuring the integration of the LF glottal vocoder.
+The vocoder employed here is derived from GlottDNN vocoder, now featuring the integration of the LF glottal modelling.
 https://github.com/ljuvela/GlottDNN
 
 <div align="center">
   <img src="./img/logo.svg" width = "30%" height = "30%">
 </div>
 
-
+This program referred some Matlab code from the original @ Voice_Analysis_Toolkit https://github.com/jckane/Voice_Analysis_Toolkit
+written by John Kane (Phonetics and Speech Laboratory, Trinity College Dublin) in Matlab, now re-factored and re-written in C++ for better integration in GlottDNN: Author: Xiao Zhang (Phonetics and Speech Laboratory, Trinity College Dublin)  zhangx16@tcd.ie
 
 The Tolg package contains two main parts:
 
