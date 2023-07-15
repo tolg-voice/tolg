@@ -231,8 +231,9 @@ gsl::vector GetDnnPulse(const size_t &pulse_len, const double &energy,
 
   // scale pulse
   // pulse *= energy/getEnergy(pulse);
+//  std::cout << "********************* cost params *********************" << pulse << std::endl;
 
-  return pulse;
+    return pulse;
 }
 
 int CreateExcitation(const Param &params, const SynthesisData &data,

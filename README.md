@@ -20,6 +20,19 @@ The Tolg package contains two main parts:
 2) Python scripts for vocoder analysis, synthesis and training a DNN excitation model:
    - Dependencies: `python3`, `numpy`, `pytorch>=1.1.0`
 
+## Features
+1) Tunable LF Vocoder for Voice Quality:
+   Easily enhance your voice quality with just a single command-line command.
+eg:
+```
+./Analysis ../dnn_demo/data/wav/slt_arctic_a0001.wav ../dnn_demo/config_dnn_demo.cfg 1.5
+```
+Globally tune your Rd values by multiplying them by 1.5.
+
+2) Synthesize LF excitation signals using a DNN-based approach
+   
+
+
 
 ## Installation
 

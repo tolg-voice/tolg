@@ -34,5 +34,13 @@ double GetRd(const Param &params, const gsl::vector &source_signal, const gsl::v
 void lf_cont(double F0, double fs, double Ra, double Rk, double Rg, double EE, gsl::vector& g_LF);
 void Rd2R(double Rd, double EE, double F0, double& Ra, double& Rk, double& Rg);
 
-
+void ParameterSmoothing(const Param &params, AnalysisData *data);
+void PostFilter(const double &postfilter_coefficient, const int &fs, const gsl::vector &fundf, gsl::matrix *lsf);
+int CreateExcitation(const Param &params, const AnalysisData &data, gsl::vector *excitation_signal);
+void HarmonicModification(const Param &params, const AnalysisData &data, gsl::vector *excitation_signal);
+void SpectralMatchExcitation(const Param &params,const AnalysisData &data, gsl::vector *excitation_signal);
+void GenerateUnvoicedSignal(const Param &params, const AnalysisData &data, gsl::vector *signal);
+void FilterExcitation(const Param &params, const AnalysisData &data, gsl::vector *signal);
+void FftFilterExcitation(const Param &params, const AnalysisData &data, gsl::vector *signal);
+void NoiseGating(const Param &params, gsl::vector *frame_energy);
 #endif /* SRC_GLOTT_ANALYSISFUNCTIONS_H_ */

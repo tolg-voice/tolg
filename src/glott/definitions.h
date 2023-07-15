@@ -205,8 +205,8 @@ public:
     gsl::vector LF_excitation_pulses;
     gsl::vector unvoiced;
     gsl::vector EE_aligned;
-    gsl::vector spectrum;
     gsl::vector excitation_signal;
+    gsl::matrix spectrum;
 
 	/* QMF analysis specific */
 	//gsl::matrix lsf_vt_qmf1;

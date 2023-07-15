@@ -87,137 +87,9 @@
 #include "./reaper/epoch_tracker/epoch_tracker.h"
 #include "./reaper/wave/wave.h"
 
-void GenerateUnvoicedSignal(const Param &params, const AnalysisData &data,
-                            gsl::vector *signal) {
-    /* When using pulses-as-features for unvoiced, unvoiced part is filtered as
-     * voiced */
-    /*
-    if ((params.use_paf_unvoiced_synthesis &&
-         params.excitation_method == PULSES_AS_FEATURES_EXCITATION) ||
-        params.use_external_excitation)
-    { return; }
-    */
-
-    if (params.use_paf_unvoiced_synthesis &&
-        params.excitation_method == PULSES_AS_FEATURES_EXCITATION) {
-        //std::cout << "skipping unvoiced excitation generation" << std::endl;
-        return;
-    }
-
-    //std::cout << "generating unvoiced" << std::endl;
-
-    gsl::vector uv_signal((*signal).size(), true);
-    gsl::vector noise_vec(params.frame_length_unvoiced);
-    gsl::random_generator rand_gen;
-    gsl::gaussian_random random_gauss_gen(rand_gen);
-
-    gsl::vector A(params.lpc_order_vt + 1, true);
-    gsl::vector A_tilt(params.lpc_order_glot + 1, true);
-
-    ComplexVector noise_vec_fft;
-
-    ComplexVector tilt_fft;
-    size_t NFFT = 4096;  // Long FFT
-    ComplexVector vt_fft(NFFT / 2 + 1);
-    gsl::vector fft_mag(NFFT / 2 + 1);
-    size_t i;
-
-    // for de-warping filters
-    gsl::vector impulse(params.frame_length);
-    gsl::vector imp_response(params.frame_length);
-    // gsl::vector impulse(NFFT);
-    // gsl::vector imp_response(NFFT);
-    gsl::vector b(1);
-    b(0) = 1.0;
-
-    /* Define analysis and synthesis window */
-    //double kbd_alpha = 2.3;
-    //gsl::vector kbd_window =
-    //    getKaiserBesselDerivedWindow(noise_vec.size(), kbd_alpha);
-
-    size_t frame_index;
-    for (frame_index = 0; frame_index < params.number_of_frames; frame_index++) {
-        if (data.fundf(frame_index) == 0) {
+//#include "LFSynthesisFunctions.h"
 
 
-            Lsf2Poly(data.lsf_vocal_tract.get_col_vec(frame_index), &A);
-            if (params.warping_lambda_vt == 0.0) {
-                FFTRadix2(A, NFFT, &vt_fft);
-            } else {
-                /* get warped filter linear frequency response via impulse response */
-                imp_response.set_zero();
-                impulse.set_zero();
-                impulse(0) = 1.0;
-                /* get inverse filter impulse response */
-                WFilter(A, b, impulse, params.warping_lambda_vt, &imp_response);
-                FFTRadix2(imp_response, NFFT, &vt_fft);
-            }
-
-            if (params.use_external_excitation) {
-                GetFrame(data.excitation_signal, frame_index,
-                         rint(params.frame_shift / params.speed_scale), &noise_vec, NULL);
-            } else {
-                for (i = 0; i < noise_vec.size(); i++) {
-                    noise_vec(i) = random_gauss_gen.get();
-                }
-            }
-
-
-            /* Cancel pre-emphasis if needed */
-            if (params.unvoiced_pre_emphasis_coefficient > 0.0) {
-                gsl::vector noise_vec_copy(noise_vec);
-                Filter(std::vector<double>{1.0},
-                       std::vector<double>{
-                               1.0, -1.0 * params.unvoiced_pre_emphasis_coefficient},
-                       noise_vec_copy, &noise_vec);
-            }
-
-            ApplyWindowingFunction(COSINE, &noise_vec);
-
-            FFTRadix2(noise_vec, NFFT, &noise_vec_fft);
-            Lsf2Poly(data.lsf_glot.get_col_vec(frame_index), &A_tilt);
-            FFTRadix2(A_tilt, NFFT, &tilt_fft);
-
-            // Randomize phase
-            double mag;
-            double ang;
-            for (i = 0; i < noise_vec_fft.getSize(); i++) {
-                if (params.use_generic_envelope) {
-                    mag = noise_vec_fft.getAbs(i) * vt_fft.getAbs(i);
-                } else if (!params.use_spectral_matching) {
-                    /* Only use vocal tract synthesis filter */
-                    mag = noise_vec_fft.getAbs(i) *
-                          GSL_MIN(1.0 / (vt_fft.getAbs(i)), 10000);
-                } else {
-                    /* Use both vocal tract and excitation LP envelope synthesis filters */
-                    mag = noise_vec_fft.getAbs(i) *
-                          GSL_MIN(1.0 / (vt_fft.getAbs(i)), 10000) *
-                          GSL_MIN(1.0 / tilt_fft.getAbs(i), 10000);
-                }
-                ang = noise_vec_fft.getAng(i);
-
-                noise_vec_fft.setReal(i, mag * cos(double(ang)));
-                noise_vec_fft.setImag(i, mag * sin(double(ang)));
-            }
-            double e_target;
-            e_target = LogEnergy2FrameEnergy(data.frame_energy(frame_index),
-                                             noise_vec.size());
-
-            IFFTRadix2(noise_vec_fft, &noise_vec);
-
-            ApplyWindowingFunction(COSINE, &noise_vec);
-            noise_vec *= params.noise_gain_unvoiced * e_target /
-                         getEnergy(noise_vec) / sqrt(2.0);
-
-            /* Normalize overlap-add window */
-            noise_vec /= 0.5 * (double)noise_vec.size() / (double)params.frame_shift;
-            OverlapAdd(noise_vec,
-                       frame_index * rint(params.frame_shift / params.speed_scale),
-                       &uv_signal);
-        }
-    }
-    (*signal) += uv_signal;
-}
 //void Rd2R(double Rd, double EE, double F0, double& Ra, double& Rk, double& Rg) {
 //    Ra = (-1 + (4.8 * Rd)) / 100;
 //    Rk = (22.4 + (11.8 * Rd)) / 100;
@@ -434,6 +306,24 @@ int main(int argc, char *argv[]) {
     const char *wav_filename = argv[1];
     const char *default_config_filename = argv[2];
     const char *user_config_filename = argv[3];
+    double input_ratio = 1.0; // Default ratio value
+
+
+    // Check if the optional parameter is provided
+    if (argc > 3) {
+        // Extract the ratio value from the command line argument
+        double ratio = std::stod(argv[3]);
+
+        // Check if the ratio is valid (within the range of 2)
+        if (input_ratio <= 2.0) {
+            input_ratio = ratio;
+        } else {
+            std::cout << "Invalid ratio value. Ratio must be within 2.0." << std::endl;
+            return EXIT_FAILURE;
+        }
+    }
+
+
 
     /* Declare configuration parameter struct */
     Param params;
@@ -441,7 +331,7 @@ int main(int argc, char *argv[]) {
     /* Read configuration file */
     if (ReadConfig(default_config_filename, true, &params) == EXIT_FAILURE)
         return EXIT_FAILURE;
-    if (argc > 3) {
+    if (argc > 4) {
         if (ReadConfig(user_config_filename, false, &params) == EXIT_FAILURE)
             return EXIT_FAILURE;
     }
@@ -621,17 +511,16 @@ int main(int argc, char *argv[]) {
     GetRd(params, data.source_signal, data.GCI_Reaper_gsl, &(data.Rd_opt_temp), &(data.EE));
 
     data.Rd_opt.resize(data.fundf.size());
-//    data.Rd_opt.set_zero();
-//
-//    // Assuming data.Rd_opt_temp and data.Rd_opt are gsl::vector objects
-//    gsl::vector aligned_vector;
-//
-//    for (int i = 0; i < data.Rd_opt_temp.size(); ++i) {
-//        data.Rd_opt[i] = data.Rd_opt_temp[i];
-//    }
-
-
     InterpolateLinear(data.Rd_opt_temp, data.Rd_opt.size(), &data.Rd_opt);
+
+    for (std::size_t i = 0; i < data.Rd_opt.size(); ++i) {
+        data.Rd_opt[i] *= input_ratio;
+    }
+
+
+
+
+
     data.EE_aligned.resize(data.fundf.size());
     InterpolateLinear(data.EE, data.Rd_opt.size(), &data.EE_aligned);
 
@@ -650,6 +539,7 @@ int main(int argc, char *argv[]) {
 //    double UP = (Rd * EE) / (10 * F0);
 //    Rg = EI / (F0 * UP * M_PI);
 //}
+
     double  Ra_cur;
     double Rk_cur;
     double Rg_cur;
@@ -672,27 +562,22 @@ int main(int argc, char *argv[]) {
 
 
 
-
-
-
-
 //    /* FFT based filtering includes spectral matching */
 //    FftFilterExcitation(params, data, &(data.unvoiced));
 
 
-    GenerateUnvoicedSignal(params, data, &(data.unvoiced));
-//    std::cout << "********************* cost params *********************" << data.GCI_Reaper_gsl << std::endl;
-
-    for (size_t i = 0; i < data.LF_excitation_pulses.size(); ++i) {
-        data.LF_excitation_pulses[i] = data.unvoiced[i] + data.LF_excitation_pulses[i];
-//        Ra.push_back(Ra_cur); // Insert GCI_val into GCI_Reaper vector
-    }
+//    GenerateUnvoicedSignal(params, data, &(data.unvoiced));
+////    std::cout << "********************* cost params *********************" << data.GCI_Reaper_gsl << std::endl;
+//
+//    for (size_t i = 0; i < data.LF_excitation_pulses.size(); ++i) {
+//        data.LF_excitation_pulses[i] = data.unvoiced[i] + data.LF_excitation_pulses[i];
+////        Ra.push_back(Ra_cur); // Insert GCI_val into GCI_Reaper vector
+//    }
 
     std::string out_fname;
 
 //    std::cout << "********************* cost params *********************" << LF_excitation_pulses.size() << '\n';
 //
-//    std::cout << "********************* cost params *********************" << data.unvoiced << '\n';
 
 
 
@@ -702,6 +587,23 @@ int main(int argc, char *argv[]) {
     if(WriteWavFile(out_fname, data.LF_excitation_pulses, params.fs) == EXIT_FAILURE)
         return EXIT_FAILURE;
 
+//    data.excitation_signal.size() = data.LF_excitation_pulses.size();
+    data.excitation_signal = data.LF_excitation_pulses;
+
+    FilterExcitation(params, data, &(data.signal));
+
+    /* FFT based filtering includes spectral matching */
+    FftFilterExcitation(params, data, &(data.signal));
+    GenerateUnvoicedSignal(params, data, &(data.signal));
+
+    out_fname = GetParamPath("lf_pulse", ".lf_syn.wav", params.dir_syn, params);
+//    std::cout << out_fname << std::endl;
+    if(WriteWavFile(out_fname, data.signal, params.fs) == EXIT_FAILURE)
+        return EXIT_FAILURE;
+
+//    std::cout << "********************* cost params *********************" << data.Rd_opt << '\n';
+
+
 //    out_fname = GetParamPath("unvoiced", ".unvoiced.wav", params.dir_syn, params);
 ////    std::cout << out_fname << std::endl;
 //    if(WriteWavFile(out_fname, data.unvoiced, params.fs) == EXIT_FAILURE)
@@ -710,6 +612,8 @@ int main(int argc, char *argv[]) {
     /* Extract pitch synchronous (excitation) waveforms at each frame */
 
     GetPulses(params, data.LF_excitation_pulses, data.gci_inds, data.fundf, &(data.excitation_pulses));
+//    std::cout << "********************* cost params *********************" << data.excitation_pulses.size2() << std::endl;
+//    std::cout << "********************* cost params *********************" << data.fundf.size() << std::endl;
 
 
     HnrAnalysis(params, data.source_signal, data.fundf, &(data.hnr_glot));
@@ -733,7 +637,7 @@ int main(int argc, char *argv[]) {
 //    std::cout << "********************* cost params *********************" << LF_excitation_pulses << '\n';
 
 //    std::cout << "********************* cost params *********************" << data.GCI_Reaper_gsl << std::endl;
-//    std::cout << "********************* cost params *********************" << data.F0_Reaper << std::endl;
+//    std::cout << "********************* cost params *********************" << data.excitation_signal << std::endl;
 
     /* Write analyzed features to files */
     data.SaveData(params);
