@@ -87,8 +87,6 @@
 #include "./reaper/epoch_tracker/epoch_tracker.h"
 #include "./reaper/wave/wave.h"
 
-//#include "LFSynthesisFunctions.h"
-
 
 //void Rd2R(double Rd, double EE, double F0, double& Ra, double& Rk, double& Rg) {
 //    Ra = (-1 + (4.8 * Rd)) / 100;
@@ -306,23 +304,9 @@ int main(int argc, char *argv[]) {
     const char *wav_filename = argv[1];
     const char *default_config_filename = argv[2];
     const char *user_config_filename = argv[3];
-    double input_ratio = 1.0; // Default ratio value
 
-
-    // Check if the optional parameter is provided
-    if (argc > 3) {
-        // Extract the ratio value from the command line argument
-        double ratio = std::stod(argv[3]);
-
-        // Check if the ratio is valid (within the range of 2)
-        if (input_ratio <= 2.0) {
-            input_ratio = ratio;
-        } else {
-            std::cout << "Invalid ratio value. Ratio must be within 2.0." << std::endl;
-            return EXIT_FAILURE;
-        }
-    }
-
+//
+//    const char *ratio = argv[4];
 
 
     /* Declare configuration parameter struct */
@@ -331,7 +315,7 @@ int main(int argc, char *argv[]) {
     /* Read configuration file */
     if (ReadConfig(default_config_filename, true, &params) == EXIT_FAILURE)
         return EXIT_FAILURE;
-    if (argc > 4) {
+    if (argc > 3) {
         if (ReadConfig(user_config_filename, false, &params) == EXIT_FAILURE)
             return EXIT_FAILURE;
     }
@@ -511,15 +495,19 @@ int main(int argc, char *argv[]) {
     GetRd(params, data.source_signal, data.GCI_Reaper_gsl, &(data.Rd_opt_temp), &(data.EE));
 
     data.Rd_opt.resize(data.fundf.size());
+//    data.Rd_opt.set_zero();
+//
+//    // Assuming data.Rd_opt_temp and data.Rd_opt are gsl::vector objects
+//    gsl::vector aligned_vector;
+//
+//    for (int i = 0; i < data.Rd_opt_temp.size(); ++i) {
+//        data.Rd_opt[i] = data.Rd_opt_temp[i];
+//    }
+//    for (std::size_t i = 0; i < data.Rd_opt.size(); ++i) {
+//        data.Rd_opt[i] *= input_ratio;
+//    }
+
     InterpolateLinear(data.Rd_opt_temp, data.Rd_opt.size(), &data.Rd_opt);
-
-    for (std::size_t i = 0; i < data.Rd_opt.size(); ++i) {
-        data.Rd_opt[i] *= input_ratio;
-    }
-
-
-
-
 
     data.EE_aligned.resize(data.fundf.size());
     InterpolateLinear(data.EE, data.Rd_opt.size(), &data.EE_aligned);
@@ -528,17 +516,6 @@ int main(int argc, char *argv[]) {
     data.Ra.resize(data.Rd_opt.size());
     data.Rk.resize(data.Rd_opt.size());
     data.Rg.resize(data.Rd_opt.size());
-
-
-
-
-    //void Rd2R(double Rd, double EE, double F0, double& Ra, double& Rk, double& Rg) {
-//    Ra = (-1 + (4.8 * Rd)) / 100;
-//    Rk = (22.4 + (11.8 * Rd)) / 100;
-//    double EI = (M_PI * Rk * EE) / 2;
-//    double UP = (Rd * EE) / (10 * F0);
-//    Rg = EI / (F0 * UP * M_PI);
-//}
 
     double  Ra_cur;
     double Rk_cur;
@@ -550,37 +527,14 @@ int main(int argc, char *argv[]) {
         data.Ra[i] = Ra_cur;
         data.Rk[i] = Rk_cur;
         data.Rg[i] = Rg_cur;
-
-//        Ra.push_back(Ra_cur); // Insert GCI_val into GCI_Reaper vector
-
     }
 
     data.LF_excitation_pulses.resize(data.source_signal.size());
     data.LF_excitation_pulses = generateSyntheticSignal(data.source_signal, data.gci_inds, data.fundf, data.Ra, data.Rk, data.Rg, data.EE_aligned, params.fs, params.f0_min, params.f0_max, 10);
 
-    data.unvoiced.resize(data.source_signal.size());
 
-
-
-//    /* FFT based filtering includes spectral matching */
-//    FftFilterExcitation(params, data, &(data.unvoiced));
-
-
-//    GenerateUnvoicedSignal(params, data, &(data.unvoiced));
-////    std::cout << "********************* cost params *********************" << data.GCI_Reaper_gsl << std::endl;
-//
-//    for (size_t i = 0; i < data.LF_excitation_pulses.size(); ++i) {
-//        data.LF_excitation_pulses[i] = data.unvoiced[i] + data.LF_excitation_pulses[i];
-////        Ra.push_back(Ra_cur); // Insert GCI_val into GCI_Reaper vector
-//    }
 
     std::string out_fname;
-
-//    std::cout << "********************* cost params *********************" << LF_excitation_pulses.size() << '\n';
-//
-
-
-
 
     out_fname = GetParamPath("lf_pulse", ".lf_pulse.wav", params.dir_syn, params);
 //    std::cout << out_fname << std::endl;
@@ -601,13 +555,6 @@ int main(int argc, char *argv[]) {
     if(WriteWavFile(out_fname, data.signal, params.fs) == EXIT_FAILURE)
         return EXIT_FAILURE;
 
-//    std::cout << "********************* cost params *********************" << data.Rd_opt << '\n';
-
-
-//    out_fname = GetParamPath("unvoiced", ".unvoiced.wav", params.dir_syn, params);
-////    std::cout << out_fname << std::endl;
-//    if(WriteWavFile(out_fname, data.unvoiced, params.fs) == EXIT_FAILURE)
-//        return EXIT_FAILURE;
 
     /* Extract pitch synchronous (excitation) waveforms at each frame */
 
@@ -623,6 +570,68 @@ int main(int argc, char *argv[]) {
 
     /* Convert glottal source AR polynomials to LSF */
     Poly2Lsf(data.poly_glot, &(data.lsf_glot));
+
+
+    if (params.rd_ratio != 1.0) {
+        /* start to do the Rd param extraction */
+        GetRd(params, data.source_signal, data.GCI_Reaper_gsl, &(data.Rd_opt_temp), &(data.EE));
+
+        data.Rd_opt.resize(data.fundf.size());
+        InterpolateLinear(data.Rd_opt_temp, data.Rd_opt.size(), &data.Rd_opt);
+
+        for (std::size_t i = 0; i < data.Rd_opt.size(); ++i) {
+            data.Rd_opt[i] *= params.rd_ratio;
+        }
+
+
+        data.EE_aligned.resize(data.fundf.size());
+        InterpolateLinear(data.EE, data.Rd_opt.size(), &data.EE_aligned);
+
+
+        data.Ra.resize(data.Rd_opt.size());
+        data.Rk.resize(data.Rd_opt.size());
+        data.Rg.resize(data.Rd_opt.size());
+
+        double  Ra_cur;
+        double Rk_cur;
+        double Rg_cur;
+
+
+        for (size_t i = 0; i < data.Rd_opt.size(); ++i) {
+            Rd2R(data.Rd_opt(i), data.EE_aligned(i), data.fundf(i), Ra_cur, Rk_cur, Rg_cur);
+            data.Ra[i] = Ra_cur;
+            data.Rk[i] = Rk_cur;
+            data.Rg[i] = Rg_cur;
+
+//        Ra.push_back(Ra_cur); // Insert GCI_val into GCI_Reaper vector
+
+        }
+
+        data.LF_excitation_pulses.resize(data.source_signal.size());
+        data.LF_excitation_pulses = generateSyntheticSignal(data.source_signal, data.gci_inds, data.fundf, data.Ra, data.Rk, data.Rg, data.EE_aligned, params.fs, params.f0_min, params.f0_max, 10);
+
+        data.unvoiced.resize(data.source_signal.size());
+
+        std::string out_fname;
+        out_fname = GetParamPath("lf_pulse", ".lf_pulse_tuned.wav", params.dir_syn, params);
+//    std::cout << out_fname << std::endl;
+        if(WriteWavFile(out_fname, data.LF_excitation_pulses, params.fs) == EXIT_FAILURE)
+            return EXIT_FAILURE;
+
+//    data.excitation_signal.size() = data.LF_excitation_pulses.size();
+        data.excitation_signal = data.LF_excitation_pulses;
+
+        FilterExcitation(params, data, &(data.signal));
+
+        /* FFT based filtering includes spectral matching */
+        FftFilterExcitation(params, data, &(data.signal));
+        GenerateUnvoicedSignal(params, data, &(data.signal));
+
+        out_fname = GetParamPath("lf_pulse", ".lf_syn_tuned.wav", params.dir_syn, params);
+//    std::cout << out_fname << std::endl;
+        if(WriteWavFile(out_fname, data.signal, params.fs) == EXIT_FAILURE)
+            return EXIT_FAILURE;
+    }
 
 
 //    std::cout << "********************* cost params *********************" << data.Ra << std::endl;
@@ -645,9 +654,9 @@ int main(int argc, char *argv[]) {
 
     return EXIT_SUCCESS;
 
+
 }
 
 /***********/
 /*   EOF   */
 /***********/
-

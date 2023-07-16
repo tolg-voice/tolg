@@ -34,6 +34,7 @@ struct Param
 	~Param();
 
   public:
+    double rd_ratio;
 	int fs;
 	int frame_length;
 	int frame_length_long;
@@ -52,7 +53,6 @@ struct Param
 	std::string external_lsf_vt_filename;
 	bool use_external_excitation;
 	std::string external_excitation_filename;
-
 	std::string dnn_path_basename;
 	std::string data_directory;
 	std::string file_basename;

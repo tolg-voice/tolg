@@ -130,6 +130,9 @@ int AssignConfigParams(const libconfig::Config &cfg, const bool required,
           (int)round(frame_ms / 1000.0 * (double)params->fs);
     }
 
+    ConfigLookupDouble("RD_RATIO", cfg, required, &((params->rd_ratio)));
+
+
     ConfigLookupBool("USE_EXTERNAL_F0", cfg, required,
                      &(params->use_external_f0));
 

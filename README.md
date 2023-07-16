@@ -1,4 +1,4 @@
-# Tolg Vocoder: Neural LF glottal vocoder for generative source-filter speech synthesis and enhancement
+# Tolg Vocoder: Neural LF glottal vocoder for generative source-filter speech synthesis and modification
 
 
 ## Acknowledge
@@ -9,30 +9,50 @@ https://github.com/ljuvela/GlottDNN
   <img src="./img/logo.svg" width = "30%" height = "30%">
 </div>
 
-This program referred some Matlab code from the original @ Voice_Analysis_Toolkit https://github.com/jckane/Voice_Analysis_Toolkit
-written by John Kane (Phonetics and Speech Laboratory, Trinity College Dublin) in Matlab, now re-factored and re-written in C++ for better integration in GlottDNN: Author: Xiao Zhang (Phonetics and Speech Laboratory, Trinity College Dublin)  zhangx16@tcd.ie
+This LF program referred some Matlab code from the original @ Voice_Analysis_Toolkit https://github.com/jckane/Voice_Analysis_Toolkit
+written by John Kane (Phonetics and Speech Laboratory, Trinity College Dublin) in Matlab, 
+now re-factored and re-written in C++ for better integration for copy-syn and DNN training in GlottDNN: Author: Xiao Zhang (Phonetics and Speech Laboratory, Trinity College Dublin)  zhangx16@tcd.ie
 
 The Tolg package contains two main parts:
-
-1) The glottal vocoder written in C++
+1) The LF glottal vocoder written in C++
    - Dependencies: `libsndfile`, `libgsl`, `libconfig`
 
-2) Python scripts for vocoder analysis, synthesis and training a DNN excitation model:
+2) Python scripts for LF vocoder analysis, synthesis and training a DNN excitation model:
    - Dependencies: `python3`, `numpy`, `pytorch>=1.1.0`
 
 ## Features
-1) Tunable LF Vocoder for Voice Quality:
+1) Instantly tunable LF Vocoder for Voice Quality:
    Easily enhance your voice quality with just a single command-line command.
 eg:
+Change the parameter under the file, the default value is ```1.0```: 
 ```
-./Analysis ../dnn_demo/data/wav/slt_arctic_a0001.wav ../dnn_demo/config_dnn_demo.cfg 1.5
+tolg/dnn_demo/config_dnn_demo.cfg
 ```
-Globally tune your Rd values by multiplying them by 1.5.
+
+```
+RD_RATIO =                   1.0;
+```
+Here is the tuning cmd line:
+```
+./src/Analysis <./demo.wav> ../dnn_demo/config_dnn_demo.cfg
+```
+here is an example:
+
+```
+./src/Analysis ../dnn_demo/data/wav/slt_arctic_a0001.wav ../dnn_demo/config_dnn_demo.cfg
+```
+Here is the modified Rd value:
+
+```
+RD_RATIO =                   1.5;
+```
+It can globally tune your Rd values by multiplying them by 1.5.
+
+(Notice: the Rd_ratio value is a double number, so the decibel is compulsory)
+The tuned audio file will be generated under the same path of <./demo.wav>. 
+
 
 2) Synthesize LF excitation signals using a DNN-based approach
-   
-
-
 
 ## Installation
 
@@ -179,7 +199,7 @@ These examples assume 16kHz sampling rate audio. Other sampling rates are feasib
 This is the analysis part:
 
 ```
-./Analysis ../dnn_demo/data/wav/slt_arctic_a0001.wav ../dnn_demo/config_dnn_demo.cfg
+./src/Analysis ../dnn_demo/data/wav/slt_arctic_a0001.wav ../dnn_demo/config_dnn_demo.cfg
 ```
 
 
@@ -323,6 +343,10 @@ The paper also contains a technical details of the vocoder
 
 If the software is to be deployed in commercial products, permission must be asked from Aalto University 
     (please contact: lauri.juvela@aalto.fi , manu.airaksinen@aalto.fi or paavo.alku@aalto.fi). 
+
+
+
+
 
 This software distribution also includes third-party C++ wrappers for the GSL library, which are licenced separately under the GPL 3 licence. 
 For details, see

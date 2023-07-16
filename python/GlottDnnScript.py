@@ -178,6 +178,8 @@ def glott_vocoder_analysis():
                 # run analysis program
                 cmd = f"export LD_LIBRARY_PATH={os.environ['LD_LIBRARY_PATH']};"
                 cmd += conf.Analysis + ' ' + wavfile + ' ' + conf.config_default + ' ' + config_user
+                # cmd += conf.Analysis + ' ' + wavfile + ' ' + conf.config_default
+
                 os.system(cmd)
                 # remove temporary config
                 os.remove(config_user)

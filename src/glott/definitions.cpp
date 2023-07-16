@@ -32,7 +32,8 @@ Param::Param() {
    psola_windowing_function = COSINE;
    paf_analysis_window = COSINE;
    /* Other parameters */
-	fs = 16000;
+    rd_ratio = 1;
+    fs = 16000;
 	frame_length = 400;
 	frame_length_unvoiced = 160;
 	frame_length_long = 800;
