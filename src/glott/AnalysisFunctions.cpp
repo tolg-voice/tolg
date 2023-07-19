@@ -59,9 +59,14 @@ int PULSE_NOT_FOUND = -1;
 
 
 
+// Hanning window function
+double hanningWindow(int i, int n) {
+    return 0.5 * (1.0 - cos(2.0 * M_PI * ((double)i + 1.0) / ((double)n + 1.0)));
+}
 
-
-
+double hammingWindow(int i, int n) {
+    return 0.53836 - 0.46164 * (cos(2.0 * M_PI * ((double)i) / ((double)(n - 1))));
+}
 
 int PolarityDetection(const Param &params, gsl::vector *signal,
                       gsl::vector *source_signal_iaif) {
@@ -226,7 +231,7 @@ int GetGci(const Param &params, const gsl::vector &signal, const gsl::vector &so
 
     }
 
-    RemoveDuplicateGciIndices(gci_inds);
+//    RemoveDuplicateGciIndices(gci_inds);
 
     std::cout << " done." << std::endl;
     return EXIT_SUCCESS;
@@ -1676,7 +1681,11 @@ double GetRd(const Param &params, const gsl::vector &source_signal,
         gsl::vector glot_seg(source_signal.subvector(start, finish - start + 1));
         lf_data.glot_seg = glot_seg;
 
-
+        // Applying Hanning window to lf_data.glot_seg,
+        // glot_seg=glot(start:finish).*hanning(finish-start+1);
+        for (int i = 0; i < lf_data.glot_seg.size(); i++) {
+            lf_data.glot_seg[i] *= hanningWindow(i, lf_data.glot_seg.size());
+        }
 
         //  glot_seg_spec=20*log10(abs(fft(glot_seg)));
         ComplexVector glot_seg_spec;
@@ -1730,9 +1739,14 @@ double GetRd(const Param &params, const gsl::vector &source_signal,
             // LFgroup = makePulseCentGCI(pulse,pulseLen,GCI(n)-start,finish-GCI(n));
             lf_data.LFgroup = makePulseCentGCI(lf_data.pulse, pulseLen, gci_inds(n)-start, finish-gci_inds(n));
 
+            // LFgroup_win=LFgroup(:).*hanning(finish-start+1);
+            int lfgroup_size = finish - start + 1;
+            for (int i = 0; i < lfgroup_size; i++) {
+                lf_data.LFgroup(i) *= hanningWindow(i, lfgroup_size);
+            }
+
             // LFgroup_win=LFgroup(:);
             lf_data.LFgroup_win = lf_data.LFgroup;
-
 
             //  glot_seg_spec=20*log10(abs(fft(glot_seg)));
             ComplexVector LFgroup_win_spec;
@@ -2970,6 +2984,12 @@ void FftFilterExcitation(const Param &params, const AnalysisData &data,
 
             /* Normalize overlap-add window */
             frame /= 0.5 * (double)frame.size() / (double)params.frame_shift;
+
+            // In here add the Hanning window to the PSOLA (by Xiao)
+            for (int i = 0; i < frame.size(); i++) {
+                frame[i] *= hanningWindow(i, frame.size());
+            }
+
             OverlapAdd(frame,
                        frame_index * rint(params.frame_shift / params.speed_scale),
                        signal);

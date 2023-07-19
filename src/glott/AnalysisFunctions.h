@@ -43,4 +43,6 @@ void GenerateUnvoicedSignal(const Param &params, const AnalysisData &data, gsl::
 void FilterExcitation(const Param &params, const AnalysisData &data, gsl::vector *signal);
 void FftFilterExcitation(const Param &params, const AnalysisData &data, gsl::vector *signal);
 void NoiseGating(const Param &params, gsl::vector *frame_energy);
+double hanningWindow(int i, int n);
+double hammingWindow(int i, int n);
 #endif /* SRC_GLOTT_ANALYSISFUNCTIONS_H_ */

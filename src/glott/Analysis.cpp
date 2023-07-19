@@ -134,7 +134,7 @@ bool any_wrap(const gsl::vector &x) {
     return false;
 }
 
-
+// Hanning window function
 
 gsl::vector generateSyntheticSignal(const gsl::vector& glot, const gsl::vector& GCI, const gsl::vector& F0,
                                     const gsl::vector& Ra, const gsl::vector& Rk,
@@ -208,6 +208,10 @@ gsl::vector generateSyntheticSignal(const gsl::vector& glot, const gsl::vector& 
                     minVal = pulse[i];
                     idx = i;
                 }
+            }
+
+            for (int i = 0; i < pulse.size(); i++) {
+                pulse[i] *= hammingWindow(i, pulse.size());
             }
 
             start[n] = GCI[n] - idx - 1;
@@ -529,6 +533,9 @@ int main(int argc, char *argv[]) {
         data.Rg[i] = Rg_cur;
     }
 
+
+
+
     data.LF_excitation_pulses.resize(data.source_signal.size());
     data.LF_excitation_pulses = generateSyntheticSignal(data.source_signal, data.gci_inds, data.fundf, data.Ra, data.Rk, data.Rg, data.EE_aligned, params.fs, params.f0_min, params.f0_max, 10);
 
@@ -549,6 +556,8 @@ int main(int argc, char *argv[]) {
     /* FFT based filtering includes spectral matching */
     FftFilterExcitation(params, data, &(data.signal));
     GenerateUnvoicedSignal(params, data, &(data.signal));
+
+
 
     out_fname = GetParamPath("lf_pulse", ".lf_syn.wav", params.dir_syn, params);
 //    std::cout << out_fname << std::endl;
