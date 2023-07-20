@@ -155,14 +155,6 @@ gsl::vector generateSyntheticSignal(const gsl::vector& glot, const gsl::vector& 
             UP[n] = pulse_int.max();
             int cnt = 1;
 
-
-//            gsl::vector Rg_copy = Rg; // Make a copy of the Rg vector for modification
-
-
-//            std::vector<double> pulse_std(pulse.size());
-//            for (size_t i = 0; i < pulse.size(); ++i) {
-//                pulse_std[i] = pulse[i];
-//            }
             gsl::vector pulse_logic;
             pulse_logic = contains_nan(pulse);
 
@@ -172,34 +164,11 @@ gsl::vector generateSyntheticSignal(const gsl::vector& glot, const gsl::vector& 
                 cnt++;
             }
 
-//            Rg = Rg_copy; // Assign the modified Rg_copy back to the original Rg vector
-
-
-
-//            while (pulse.any() && cnt < maxCnt) {
-//                Rg[n] += 0.01;
-//                lf_cont(F0[n], fs, Ra[n], Rk[n], Rg[n], EE[n], pulse);
-//                cnt++;
-//            }
-//            while ((std::any_of(pulse_std.begin(), pulse_std.end(), [](double value) { return std::isnan(value); })) && cnt < maxCnt) {
-//                // Your code inside the loop
-////                Rg[n] += 0.01;
-////                lf_cont(F0[n], fs, Ra[n], Rk[n], Rg[n], EE[n], pulse);
-//                cnt++;
-//            }
-
-
             if (cnt == maxCnt) {
                 pulse.resize(pulse.size());
                 pulse.set_zero();
             }
 
-
-//            double minVal;
-//            size_t idx;
-//
-//
-//            pulse.min(&minVal, &idx);
             double minVal = pulse[0];
             size_t idx = 0;
 
@@ -437,18 +406,21 @@ int main(int argc, char *argv[]) {
     if (f0 != nullptr) {
         const Track& track = *f0;
         for (int i = 0; i < track.num_frames(); ++i) {
-            if (track.a(i) != -1) {
+//            if (track.a(i) != -1) {
                 double F0_val = track.a(i) ;
+                if (track.a(i) == -1) {
+                    F0_val = 0;
+                }
 //                std::cout << F0_val << std::endl;
                 F0_Reaper.push_back(F0_val); // Insert GCI_val into GCI_Reaper vector
-            }
+//            }
         }
     } else {
         std::cerr << "F0 track is null" << std::endl;
     }
 
 
-    // Convert GCI_Reaper to gsl::vector
+    // Convert F0_Reaper to gsl::vector
     data.F0_Reaper_gsl.resize(F0_Reaper.size());
     for (size_t i = 0; i < F0_Reaper.size(); ++i) {
         data.F0_Reaper_gsl[i] = F0_Reaper[i];
@@ -458,13 +430,15 @@ int main(int argc, char *argv[]) {
 
     std::vector<double> GCI_Reaper;
     if (f0 != nullptr) {
-        const Track& track = *f0;
+        const Track& track = *pm;
         for (int i = 0; i < track.num_frames(); ++i) {
-            if (track.v(i) == 1) {
-                int GCI_val = track.t(i) * 16000.0;
+//            std::cout << track.v(i) << std::endl;
+//            std::cout << track.t(i) << std::endl;
+//            if (track.v(i) == 1) {
+              int GCI_val = track.t(i) * 16000.0;
 //                std::cout << GCI_val << std::endl;
-                GCI_Reaper.push_back(GCI_val); // Insert GCI_val into GCI_Reaper vector
-            }
+              GCI_Reaper.push_back(GCI_val); // Insert GCI_val into GCI_Reaper vector
+//            }
         }
     } else {
         std::cerr << "GCI track is null" << std::endl;
@@ -476,45 +450,16 @@ int main(int argc, char *argv[]) {
     for (size_t i = 0; i < GCI_Reaper.size(); ++i) {
         data.GCI_Reaper_gsl[i] = GCI_Reaper[i];
     }
-//    gsl::vector GCI_Reaper;
-//
-//    if (f0 != nullptr) {
-//        const Track& track = *f0;
-//        GCI_Reaper.resize(track.num_frames()); // Resize GCI_Reaper vector
-//
-////        int index = 0;
-//        for (int i = 0; i < track.num_frames(); ++i) {
-//            if (track.v(i) == 1) {
-//                int GCI_val = track.t(i) * 16000;
-//                GCI_Reaper[i] = GCI_val; // Assign GCI_val to element at index
-////                ++index;
-//            }
-//        }
-//    } else {
-//        std::cerr << "F0 track is null" << std::endl;
-//    }
 
 
     /* start to do the Rd param extraction */
     GetRd(params, data.source_signal, data.GCI_Reaper_gsl, &(data.Rd_opt_temp), &(data.EE));
 
     data.Rd_opt.resize(data.fundf.size());
-//    data.Rd_opt.set_zero();
-//
-//    // Assuming data.Rd_opt_temp and data.Rd_opt are gsl::vector objects
-//    gsl::vector aligned_vector;
-//
-//    for (int i = 0; i < data.Rd_opt_temp.size(); ++i) {
-//        data.Rd_opt[i] = data.Rd_opt_temp[i];
-//    }
-//    for (std::size_t i = 0; i < data.Rd_opt.size(); ++i) {
-//        data.Rd_opt[i] *= input_ratio;
-//    }
-
-    InterpolateLinear(data.Rd_opt_temp, data.Rd_opt.size(), &data.Rd_opt);
+    InterpolateLinear(data.Rd_opt_temp, data.fundf.size(), &data.Rd_opt);
 
     data.EE_aligned.resize(data.fundf.size());
-    InterpolateLinear(data.EE, data.Rd_opt.size(), &data.EE_aligned);
+    InterpolateLinear(data.EE, data.fundf.size(), &data.EE_aligned);
 
 
     data.Ra.resize(data.Rd_opt.size());
@@ -533,11 +478,12 @@ int main(int argc, char *argv[]) {
         data.Rg[i] = Rg_cur;
     }
 
+//    std::cout << "********************* GCI params *********************" << data.EE << std::endl;
 
 
 
     data.LF_excitation_pulses.resize(data.source_signal.size());
-    data.LF_excitation_pulses = generateSyntheticSignal(data.source_signal, data.gci_inds, data.fundf, data.Ra, data.Rk, data.Rg, data.EE_aligned, params.fs, params.f0_min, params.f0_max, 10);
+    data.LF_excitation_pulses = generateSyntheticSignal(data.source_signal, data.GCI_Reaper_gsl, data.fundf, data.Ra, data.Rk, data.Rg, data.EE, params.fs, params.f0_min, params.f0_max, 10);
 
 
 
@@ -563,6 +509,11 @@ int main(int argc, char *argv[]) {
 //    std::cout << out_fname << std::endl;
     if(WriteWavFile(out_fname, data.signal, params.fs) == EXIT_FAILURE)
         return EXIT_FAILURE;
+
+
+
+
+
 
 
     /* Extract pitch synchronous (excitation) waveforms at each frame */
@@ -643,19 +594,10 @@ int main(int argc, char *argv[]) {
     }
 
 
-//    std::cout << "********************* cost params *********************" << data.Ra << std::endl;
-//    std::cout << "********************* cost params *********************" << data.Rk << std::endl;
-//    std::cout << "********************* cost params *********************" << data.Rg << std::endl;
-//
-//    std::cout << "********************* cost params *********************" << data.EE << std::endl;
-//    std::cout << "********************* cost params *********************" << data.Rd_opt.size() << std::endl;
-//    std::cout << "********************* cost params *********************" << data.fundf.size() << std::endl;
-//    std::cout << "********************* cost params *********************" << data.Rd_opt.size() << std::endl;
-//    std::cout << "********************* cost params *********************" << data.excitation_pulses << '\n';
-//    std::cout << "********************* cost params *********************" << LF_excitation_pulses << '\n';
+//    std::cout << "********************* GCI params *********************" << data.GCI_Reaper_gsl << std::endl;
+//    std::cout << GCI_Reaper << std::endl;
 
-//    std::cout << "********************* cost params *********************" << data.GCI_Reaper_gsl << std::endl;
-//    std::cout << "********************* cost params *********************" << data.excitation_signal << std::endl;
+//    std::cout << "********************* GCI params *********************" << GCI_Reaper << std::endl;
 
     /* Write analyzed features to files */
     data.SaveData(params);
