@@ -338,7 +338,7 @@ int main(int argc, char *argv[]) {
 
     /* Re-estimate GCIs on the residual */
     if(GetGci(params, data.signal, data.source_signal, data.fundf, &(data.gci_inds)) == EXIT_FAILURE)
-       return EXIT_FAILURE;
+        return EXIT_FAILURE;
 
 
     bool do_hilbert_transform = kDoHilbertTransform;
@@ -394,12 +394,12 @@ int main(int argc, char *argv[]) {
         const Track& track = *f0;
         for (int i = 0; i < track.num_frames(); ++i) {
 //            if (track.a(i) != -1) {
-                double F0_val = track.a(i) ;
-                if (track.a(i) == -1) {
-                    F0_val = 0;
-                }
+            double F0_val = track.a(i) ;
+            if (track.a(i) == -1) {
+                F0_val = 0;
+            }
 //                std::cout << F0_val << std::endl;
-                F0_Reaper.push_back(F0_val); // Insert GCI_val into GCI_Reaper vector
+            F0_Reaper.push_back(F0_val); // Insert GCI_val into GCI_Reaper vector
 //            }
         }
     } else {
@@ -416,16 +416,16 @@ int main(int argc, char *argv[]) {
 
 
     std::vector<double> GCI_Reaper;
-    if (f0 != nullptr) {
-        const Track& track = *f0;
+    if (pm != nullptr) {
+        const Track& track = *pm;
 
         for (int i = 0; i < track.num_frames(); ++i) {
 //            std::cout << track.v(i) << std::endl;
 //            std::cout << track.t(i) << std::endl;
 //            if (track.v(i) == 1) {
-              int GCI_val = track.t(i) * 16000;
+            int GCI_val = track.t(i) * 16000;
 //                std::cout << GCI_val << std::endl;
-              GCI_Reaper.push_back(GCI_val); // Insert GCI_val into GCI_Reaper vector
+            GCI_Reaper.push_back(GCI_val); // Insert GCI_val into GCI_Reaper vector
 //            }
         }
     } else {
@@ -478,8 +478,10 @@ int main(int argc, char *argv[]) {
         return EXIT_FAILURE;
 
     data.excitation_signal = data.LF_excitation_pulses;
+
+    FilterExcitation(params, data, &(data.signal));
     /* FFT based filtering includes spectral matching */
-//    FftFilterExcitation(params, data, &(data.signal));
+    FftFilterExcitation(params, data, &(data.signal));
     GenerateUnvoicedSignal(params, data, &(data.signal));
 
 
@@ -555,10 +557,10 @@ int main(int argc, char *argv[]) {
 //    data.excitation_signal.size() = data.LF_excitation_pulses.size();
         data.excitation_signal = data.LF_excitation_pulses;
 
-//        FilterExcitation(params, data, &(data.signal));
+        FilterExcitation(params, data, &(data.signal));
 
         /* FFT based filtering includes spectral matching */
-//        FftFilterExcitation(params, data, &(data.signal));
+        FftFilterExcitation(params, data, &(data.signal));
         GenerateUnvoicedSignal(params, data, &(data.signal));
 
         out_fname = GetParamPath("lf_pulse", ".lf_syn_tuned.wav", params.dir_syn, params);
