@@ -180,7 +180,7 @@ gsl::vector generateSyntheticSignal(const gsl::vector& glot, const gsl::vector& 
             }
 
             for (int i = 0; i < pulse.size(); i++) {
-                pulse[i] *= hammingWindow(i, pulse.size());
+                pulse[i] *= hanningWindow(i, pulse.size());
             }
 
             start[n] = GCI[n] - idx - 1;
@@ -337,21 +337,10 @@ int main(int argc, char *argv[]) {
     InverseFilter(params, data, &(data.poly_glot), &(data.source_signal));
 
     /* Re-estimate GCIs on the residual */
-    //if(GetGci(params, data.signal, data.source_signal, data.fundf, &(data.gci_inds)) == EXIT_FAILURE)
-    //   return EXIT_FAILURE;
+    if(GetGci(params, data.signal, data.source_signal, data.fundf, &(data.gci_inds)) == EXIT_FAILURE)
+       return EXIT_FAILURE;
 
 
-
-
-
-//    std::cout << "********************* cost params *********************" << data.gci_inds << std::endl;
-
-
-    int opt = 0;
-//    std::string filename;
-    std::string f0_output;
-    std::string pm_output;
-    std::string corr_output;
     bool do_hilbert_transform = kDoHilbertTransform;
     bool do_high_pass = kDoHighpass;
     float external_frame_interval = kExternalFrameInterval;
@@ -364,9 +353,7 @@ int main(int argc, char *argv[]) {
 
     std::string filename(wav_filename);
 
-//    filename = "./slt_arctic_a0004.wav";
-    f0_output = "./arctic_a0001.f0";
-    pm_output = "./arctic_a0001.pm";
+
     // Load input.
     Wave wav;
     if (!wav.Load(filename)) {
@@ -430,12 +417,13 @@ int main(int argc, char *argv[]) {
 
     std::vector<double> GCI_Reaper;
     if (f0 != nullptr) {
-        const Track& track = *pm;
+        const Track& track = *f0;
+
         for (int i = 0; i < track.num_frames(); ++i) {
 //            std::cout << track.v(i) << std::endl;
 //            std::cout << track.t(i) << std::endl;
 //            if (track.v(i) == 1) {
-              int GCI_val = track.t(i) * 16000.0;
+              int GCI_val = track.t(i) * 16000;
 //                std::cout << GCI_val << std::endl;
               GCI_Reaper.push_back(GCI_val); // Insert GCI_val into GCI_Reaper vector
 //            }
@@ -462,11 +450,13 @@ int main(int argc, char *argv[]) {
     InterpolateLinear(data.EE, data.fundf.size(), &data.EE_aligned);
 
 
+
+
     data.Ra.resize(data.Rd_opt.size());
     data.Rk.resize(data.Rd_opt.size());
     data.Rg.resize(data.Rd_opt.size());
 
-    double  Ra_cur;
+    double Ra_cur;
     double Rk_cur;
     double Rg_cur;
 
@@ -478,47 +468,29 @@ int main(int argc, char *argv[]) {
         data.Rg[i] = Rg_cur;
     }
 
-//    std::cout << "********************* GCI params *********************" << data.EE << std::endl;
-
-
-
-    data.LF_excitation_pulses.resize(data.source_signal.size());
-    data.LF_excitation_pulses = generateSyntheticSignal(data.source_signal, data.GCI_Reaper_gsl, data.fundf, data.Ra, data.Rk, data.Rg, data.EE, params.fs, params.f0_min, params.f0_max, 10);
-
+    data.LF_excitation_pulses = generateSyntheticSignal(data.source_signal, data.GCI_Reaper_gsl, data.fundf, data.Ra, data.Rk, data.Rg, data.EE_aligned, params.fs, params.f0_min, params.f0_max, 10);
 
 
     std::string out_fname;
-
     out_fname = GetParamPath("lf_pulse", ".lf_pulse.wav", params.dir_syn, params);
 //    std::cout << out_fname << std::endl;
     if(WriteWavFile(out_fname, data.LF_excitation_pulses, params.fs) == EXIT_FAILURE)
         return EXIT_FAILURE;
 
-//    data.excitation_signal.size() = data.LF_excitation_pulses.size();
     data.excitation_signal = data.LF_excitation_pulses;
-
-    FilterExcitation(params, data, &(data.signal));
-
     /* FFT based filtering includes spectral matching */
-    FftFilterExcitation(params, data, &(data.signal));
+//    FftFilterExcitation(params, data, &(data.signal));
     GenerateUnvoicedSignal(params, data, &(data.signal));
 
 
-
     out_fname = GetParamPath("lf_pulse", ".lf_syn.wav", params.dir_syn, params);
-//    std::cout << out_fname << std::endl;
     if(WriteWavFile(out_fname, data.signal, params.fs) == EXIT_FAILURE)
         return EXIT_FAILURE;
 
 
-
-
-
-
-
     /* Extract pitch synchronous (excitation) waveforms at each frame */
 
-    GetPulses(params, data.LF_excitation_pulses, data.gci_inds, data.fundf, &(data.excitation_pulses));
+    GetPulses(params, data.LF_excitation_pulses, data.GCI_Reaper_gsl, data.fundf, &(data.excitation_pulses));
 //    std::cout << "********************* cost params *********************" << data.excitation_pulses.size2() << std::endl;
 //    std::cout << "********************* cost params *********************" << data.fundf.size() << std::endl;
 
@@ -548,6 +520,8 @@ int main(int argc, char *argv[]) {
         InterpolateLinear(data.EE, data.Rd_opt.size(), &data.EE_aligned);
 
 
+
+
         data.Ra.resize(data.Rd_opt.size());
         data.Rk.resize(data.Rd_opt.size());
         data.Rg.resize(data.Rd_opt.size());
@@ -568,7 +542,7 @@ int main(int argc, char *argv[]) {
         }
 
         data.LF_excitation_pulses.resize(data.source_signal.size());
-        data.LF_excitation_pulses = generateSyntheticSignal(data.source_signal, data.gci_inds, data.fundf, data.Ra, data.Rk, data.Rg, data.EE_aligned, params.fs, params.f0_min, params.f0_max, 10);
+        data.LF_excitation_pulses = generateSyntheticSignal(data.source_signal, data.GCI_Reaper_gsl, data.fundf, data.Ra, data.Rk, data.Rg, data.EE_aligned, params.fs, params.f0_min, params.f0_max, 10);
 
         data.unvoiced.resize(data.source_signal.size());
 
@@ -581,10 +555,10 @@ int main(int argc, char *argv[]) {
 //    data.excitation_signal.size() = data.LF_excitation_pulses.size();
         data.excitation_signal = data.LF_excitation_pulses;
 
-        FilterExcitation(params, data, &(data.signal));
+//        FilterExcitation(params, data, &(data.signal));
 
         /* FFT based filtering includes spectral matching */
-        FftFilterExcitation(params, data, &(data.signal));
+//        FftFilterExcitation(params, data, &(data.signal));
         GenerateUnvoicedSignal(params, data, &(data.signal));
 
         out_fname = GetParamPath("lf_pulse", ".lf_syn_tuned.wav", params.dir_syn, params);
@@ -594,8 +568,7 @@ int main(int argc, char *argv[]) {
     }
 
 
-//    std::cout << "********************* GCI params *********************" << data.GCI_Reaper_gsl << std::endl;
-//    std::cout << GCI_Reaper << std::endl;
+
 
 //    std::cout << "********************* GCI params *********************" << GCI_Reaper << std::endl;
 

@@ -2027,7 +2027,6 @@ double GetRd(const Param &params, const gsl::vector &source_signal,
     //    Rd_opt = smooth(medfilt1(Rd_opt,11),5)*.5;
     for (size_t i = 0; i < lf_data.Rd_opt.size(); i++) {
         lf_data.Rd_opt[i] *= 0.5;
-
     }
 
     *Rd_opt = gsl::vector(gci_inds.size());
