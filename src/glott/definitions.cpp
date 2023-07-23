@@ -196,7 +196,7 @@ int AnalysisData::SaveData(const Param &params) {
       WriteGslVector(filename, params.data_type, fundf);
    }
    if (params.extract_glottal_excitation) {
-      filename = GetParamPath("exc", params.extension_src, params.dir_exc, params);
+      filename = GetParamPath("src", params.extension_src, params.dir_exc, params);
       if(WriteWavFile(filename, source_signal, params.fs) == EXIT_FAILURE)
          return EXIT_FAILURE;
    }

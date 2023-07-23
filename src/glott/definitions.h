@@ -179,7 +179,8 @@ struct AnalysisData {
 	int SaveData(const Param &params);
 public:
 	gsl::vector signal;
-	gsl::vector fundf;
+    gsl::vector signal_tuned;
+    gsl::vector fundf;
 	gsl::vector frame_energy;
 	gsl::vector_int gci_inds;
 	gsl::vector source_signal;
@@ -195,17 +196,23 @@ public:
    gsl::matrix hnr_glot;
     gsl::vector Rd_opt;
     gsl::vector Rd_opt_temp;
-
+    gsl::vector Rd_opt_tuned;
     gsl::vector GCI_Reaper_gsl;
     gsl::vector F0_Reaper_gsl;
     gsl::vector EE;
+    gsl::vector EE_tuned;
     gsl::vector Ra;
+    gsl::vector Ra_tuned;
     gsl::vector Rk;
+    gsl::vector Rk_tuned;
     gsl::vector Rg;
+    gsl::vector Rg_tuned;
     gsl::vector LF_excitation_pulses;
+    gsl::vector LF_excitation_pulses_tuned;
     gsl::vector unvoiced;
     gsl::vector EE_aligned;
     gsl::vector excitation_signal;
+    gsl::vector excitation_signal_tuned;
     gsl::matrix spectrum;
 
 	/* QMF analysis specific */

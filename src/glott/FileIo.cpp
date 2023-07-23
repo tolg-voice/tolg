@@ -78,6 +78,7 @@ int WriteWavFile(const std::string &fname_str, const gsl::vector &signal, const 
 
    /* Create buffer and write signal to file */
    double *buffer = new double[signal.size()];
+
    size_t i;
    for(i=0;i<signal.size();i++)
       buffer[i] = signal(i)/scale;
