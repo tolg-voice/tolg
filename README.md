@@ -1,4 +1,4 @@
-# Tolg Vocoder: A Neural LF glottal vocoder for generative source-filter speech synthesis and modification
+# Tolg Vocoder: Neural LF glottal vocoder for generative source-filter speech synthesis and modification
 
 
 ## Acknowledge
