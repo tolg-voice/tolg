@@ -1,4 +1,4 @@
-# Tolg Vocoder: Neural LF glottal vocoder for generative source-filter speech synthesis and modification
+# Tolg: A classical and neural LF glottal vocoder for generative source-filter speech synthesis and modification
 
 
 ## Acknowledge
@@ -9,9 +9,22 @@ https://github.com/ljuvela/GlottDNN
   <img src="./img/logo.svg" width = "30%" height = "30%">
 </div>
 
-This LF program referred some Matlab code from the original @ Voice_Analysis_Toolkit https://github.com/jckane/Voice_Analysis_Toolkit
+This classic LF program referred some Matlab code from the original @ Voice_Analysis_Toolkit https://github.com/jckane/Voice_Analysis_Toolkit
 written by John Kane (Phonetics and Speech Laboratory, Trinity College Dublin) in Matlab, 
 now re-factored and re-written in C++ for better integration for copy-syn and DNN training in GlottDNN: Author: Xiao Zhang (Phonetics and Speech Laboratory, Trinity College Dublin)  zhangx16@tcd.ie
+
+<div align="center">
+  <img src="./img/tolg_files.png" width = "50%" height = "50%">
+</div>
+
+<div align="center">
+  <img src="./img/file_folders.png" width = "50%" height = "50%">
+</div>
+
+<div align="center">
+  <img src="./img/comparison.png" width = "50%" height = "50%">
+</div>
+
 
 The Tolg package contains two main parts:
 1) The LF glottal vocoder written in C++
@@ -32,6 +45,12 @@ tolg/dnn_demo/config_dnn_demo.cfg
 ```
 RD_RATIO =                   1.0;
 ```
+
+<div align="center">
+  <img src="./img/tunning.png" width = "50%" height = "50%">
+</div>
+
+
 Here is the tuning cmd line:
 ```
 ./src/Analysis <./demo.wav> ../dnn_demo/config_dnn_demo.cfg
@@ -143,10 +162,15 @@ Before we run anything, you can modify the configuration files below:
 ./dnn_demo/config_dnn_demo.py
 ```
 
-Then run the example script by saying
+Then run the example script by running
 ``` bash
 python3 ./python/GlottDnnScript.py ./dnn_demo/config_dnn_demo.py
 ```
+
+<div align="center">
+  <img src="./img/file_folders.png" width = "50%" height = "50%">
+</div>
+
 
 The demo script runs vocoder analysis, trains a DNN excitation model, and finally applies copy-synthesis to the samples.
 After running, the copy-synthesis results are stored in `./dnn_demo/data/syn` and the original wave files are in `./dnn_demo/data/wav`.
