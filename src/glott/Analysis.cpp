@@ -180,7 +180,7 @@ gsl::vector generateSyntheticSignal(const gsl::vector& glot, const gsl::vector& 
             }
 
             for (int i = 0; i < pulse.size(); i++) {
-                pulse[i] *= hanningWindow(i, pulse.size());
+                pulse[i] *= hammingWindow(i, pulse.size());
             }
 
             start[n] = GCI[n] - idx - 1;
@@ -445,6 +445,9 @@ int main(int argc, char *argv[]) {
 
     data.Rd_opt.resize(data.fundf.size());
     InterpolateLinear(data.Rd_opt_temp, data.fundf.size(), &data.Rd_opt);
+
+//    std::cout << "********************* GCI params *********************" << data.Rd_opt_temp << std::endl;
+
 
 //    data.EE_aligned.resize(data.fundf.size());
 //    InterpolateLinear(data.EE, data.fundf.size(), &data.EE_aligned);
