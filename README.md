@@ -1,9 +1,12 @@
-# Tolg: A classical and neural LF glottal vocoder for generative source-filter speech synthesis and modification
-
+# Tolg: A classical and neural hybrid LF glottal vocoder for generative source-filter speech synthesis and modification
 
 ## Acknowledge
 The vocoder employed here is derived from GlottDNN vocoder, now featuring the integration of the LF glottal modelling.
 https://github.com/ljuvela/GlottDNN
+
+
+
+
 
 <div align="center">
   <img src="./img/logo.svg" width = "30%" height = "30%">
@@ -17,9 +20,23 @@ now re-factored and re-written in C++ for better integration for copy-syn and DN
   <img src="./img/tolg_files.png" width = "50%" height = "50%">
 </div>
 
+LF Glottal model pulses (top), flow derivative (bottom).Figure from (Dr. Christer Gobl https://www.tcd.ie/research/profiles/?profile=cegobl)
+
+
+<div align="center">
+  <img src="./img/lf.png" width = "50%" height = "50%">
+</div>
+
+Configuration folder reference list. The files obtained from the analysis stage of Tolg are colored red, whereas those from the synthesize stage are colored blue. The conditional
+feature, which depends on the value of in the configuration file, is denoted by *.
+
+
 <div align="center">
   <img src="./img/file_folders.png" width = "50%" height = "50%">
 </div>
+
+
+Generating the LF glottal excitation signal from the proposed neural Tolg together with the classical Tolg vocoder and LF glottal flow output from GIF.
 
 <div align="center">
   <img src="./img/comparison.png" width = "50%" height = "50%">
@@ -150,7 +167,7 @@ echo 'unset OLD_LD_LIBRARY_PATH' >> $DEACTIVATE_SCRIPT
 ## Easy to go all-in-one Example:
 
 ```
-python3 ./python/GlottDnnScript.py ./dnn_demo/config_dnn_demo.py
+python3 ./python/TolgDnnScript.py ./dnn_demo/config_dnn_demo.py
 ```
 The present version requires `pytorch>=1.1.0` and all `theano` dependencies have been removed.
 
@@ -164,12 +181,8 @@ Before we run anything, you can modify the configuration files below:
 
 Then run the example script by running
 ``` bash
-python3 ./python/GlottDnnScript.py ./dnn_demo/config_dnn_demo.py
+python3 ./python/TolgScript.py ./dnn_demo/config_dnn_demo.py
 ```
-
-<div align="center">
-  <img src="./img/file_folders.png" width = "50%" height = "50%">
-</div>
 
 
 The demo script runs vocoder analysis, trains a DNN excitation model, and finally applies copy-synthesis to the samples.
@@ -212,33 +225,7 @@ x2x +fa slt_arctic_a0001.f0 > output.txt
 Here is to convert an Asscii file into float number.
 
 
-
-## One step analysis-synthesis example
-
-These examples assume 16kHz sampling rate audio. Other sampling rates are feasible, but you should change the config accordingly.  
-
-
-
-
-This is the analysis part:
-
-```
-./src/Analysis ../dnn_demo/data/wav/slt_arctic_a0001.wav ../dnn_demo/config_dnn_demo.cfg
-```
-
-
-Let's first get a wave file from the Arctic database
-``` bash 
-#!/bin/bash
-
-URL='http://festvox.org/cmu_arctic/cmu_arctic/cmu_us_slt_arctic/wav/arctic_a0001.wav'
-DATADIR='./data/tmp'
-BASENAME='slt_arctic_a0001'
-mkdir -p $DATADIR
-wget -O "$DATADIR/$BASENAME.wav" $URL
-```
-
-### Acoustic feature analysis
+### LF Acoustic parameter analysis
 
 Now run Tolg Analysis program with default configuration
 ``` bash
@@ -247,48 +234,6 @@ or
 ./src/Analysis "$DATADIR/$BASENAME.wav" ./src/config_default_16k.cfg
 
 ```
-
-
-
-### Synthesis with single pulse excitation 
-
-First let's run copy synthesis with `SINGLE_PULSE` excitation. This method uses a single fixed glottal pulse, which is modified according to F0 and HNR (similarly to the original GlottHMM vocoder).
-
-``` bash
-# Run synthesis with default config
-./src/Synthesis "$DATADIR/$BASENAME" ./config/config_default_16k.cfg
-
-# Move generated file
-mv "$DATADIR/$BASENAME.syn.wav" "$DATADIR/$BASENAME.syn.sp.wav"    
-```
-
-A copy-synthesis wave file should now be at `./data/tmp/slt_arctic_a0001.syn.sp.wav`.
-The single pulse excitation will sound somewhat buzzy, so let's try if we can do better.
-
-### Synthesis with original pulses
-
- We already extracted glottal pulses from the signal and stored them in `./data/tmp/slt_arctic_a0001.pls`. 
- Better quality can be achieved by re-assembling the original pulses using pitch synchronous overlap-add. 
-
-To override some of the default config values, we can create a "user config" file and run Synthesis with two config files
-
-``` bash
-# Create user config
-CONF_USR="$DATADIR/config_usr.cfg"
-echo '# Comment: User config for GlottDNN' > $CONF_USR  
-echo 'EXCITATION_METHOD = "PULSES_AS_FEATURES";' >> $CONF_USR
-echo 'USE_WSOLA = true;' >> $CONF_USR
-echo 'USE_SPECTRAL_MATCHING = false;' >> $CONF_USR
-echo 'NOISE_GAIN_VOICED = 0.0;' >> $CONF_USR
-
-# Run synthesis with two config files
-./src/Synthesis "$DATADIR/$BASENAME" ./config/config_default_16k.cfg $CONF_USR
-
-# Move generated file
-mv "$DATADIR/$BASENAME.syn.wav" "$DATADIR/$BASENAME.syn.paf.wav"       
-```
-
-Of course the original pulses are not available in many applications (such as text-to-speech). For this, we can use a trainable excitation model (neural net), which generates the pulses from acoustic features.
 
 ## Built-in neural net excitation model 
 
@@ -300,13 +245,7 @@ make_dirs = 1
 make_scp = 1
 ```
 
-Optionally, use REAPER for pitch (F0) and GCI analysis. 
-Also optionally, use RAPT from SPTK for pitch analysis. These programs need to be installed separately, so this example does not use them. 
 
-``` python
-do_reaper_pitch_analysis = 0
-do_sptk_pitch_analysis = 0
-```
 
 Use Tolg to extract glottal vocoder features and pulses for  excitation model training.
 ``` python
@@ -324,54 +263,3 @@ Do copy synthesis (using the internal implementation of DNN excitation)
 ``` python
 do_glott_vocoder_synthesis = 1
 ```
-
-### Improvements from toy example
-
-1) Use more data
-2) Experiment with different pitch estimators
-    - https://github.com/google/REAPER
-    - http://sp-tk.sourceforge.net
-3) Use more advanced excitation models
-    - https://github.com/ljuvela/multiscale-GAN
-    - https://github.com/ljuvela/ResGAN
-    - Build your own
-
-## Support
-
-When in trouble, open an issue at GitHub. Others will likely have similar issues and it's best to solve them collectively
-
-https://github.com/tolg-voice/tolg/issues
-
-For more examples and explanation, check the documentation in
-
-https://grabvoice.com/tlog
-
-## Licence
-
-Copyright 2016-2018 Lauri Juvela and Manu Airaksinen
-
-This product includes software developed at Aalto University (http://www.aalto.fi/).
-
-Licensed under the Apache License, Version 2.0
-See LICENCE and NOTICE for full licence details. 
-
-If you publish work based on GlottDNN, please cite
-```
-    M. Airaksinen, L. Juvela, B. Bollepalli, J. Yamagishi and P. Alku,
-    "A comparison between STRAIGHT, glottal, and sinusoidal vocoding in statistical parametric speech synthesis,"
-    in IEEE/ACM Transactions on Audio, Speech, and Language Processing.
-    doi: 10.1109/TASLP.2018.2835720. 
-```    
-
-The paper also contains a technical details of the vocoder 
-
-If the software is to be deployed in commercial products, permission must be asked from Aalto University 
-    (please contact: lauri.juvela@aalto.fi , manu.airaksinen@aalto.fi or paavo.alku@aalto.fi). 
-
-
-
-
-
-This software distribution also includes third-party C++ wrappers for the GSL library, which are licenced separately under the GPL 3 licence. 
-For details, see
-    `src/gslwrap/LICENCE`
