@@ -1,4 +1,4 @@
-# Tolg: A classical and neural hybrid LF glottal vocoder for generative source-filter speech synthesis and modification
+# Tolg: A classical and neural hybrid LF glottal vocoder
 
 ## Acknowledge
 The vocoder employed here is derived from GlottDNN vocoder, now featuring the integration of the LF glottal modelling.
