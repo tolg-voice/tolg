@@ -1,4 +1,4 @@
-# Tolg: A hybrid LF glottal vocoder
+# Tolg
 
 ## Acknowledge
 The vocoder employed here is derived from GlottDNN vocoder, now featuring the integration of the LF glottal modelling.
